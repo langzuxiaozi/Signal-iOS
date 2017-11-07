@@ -533,7 +533,7 @@ void setDatabaseInitialized()
         }
 
         // Try to reset app by deleting database.
-        [self resetSignalStorage];
+        [self resetSignalStorageWithBackup:NO];
 
         dbPassword = [self createAndSetNewDatabasePassword];
     }
@@ -716,11 +716,14 @@ void setDatabaseInitialized()
     }
 }
 
-- (void)resetSignalStorage
+- (void)resetSignalStorageWithBackup:(BOOL)withBackup
 {
-    [self backupDataBaseFile];
+    if (withBackup) {
+        [self backupDataBaseFile];
+    }
 
     self.database = nil;
+
     _dbReadConnection = nil;
     _dbReadWriteConnection = nil;
 
@@ -746,3 +749,4 @@ void setDatabaseInitialized()
 @end
 
 NS_ASSUME_NONNULL_END
+
