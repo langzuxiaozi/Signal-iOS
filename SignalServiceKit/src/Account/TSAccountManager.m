@@ -14,6 +14,7 @@
 #import "TSSocketManager.h"
 #import "TSStorageManager+SessionStore.h"
 #import "YapDatabaseConnection+OWS.h"
+#import "TSAccountManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -332,16 +333,19 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
                                                                             signalingKey:signalingKey
                                                                                  authKey:authToken];
 
+    __weak typeof(self)weakSelf = self;
     [self.networkManager makeRequest:request
                              success:^(NSURLSessionDataTask *task, id responseObject) {
                                  NSHTTPURLResponse *response = (NSHTTPURLResponse *)task.response;
                                  long statuscode = response.statusCode;
 
+                                 typeof(self)strongSelf = weakSelf;
+
                                  switch (statuscode) {
                                      case 200:
                                      case 204: {
                                          DDLogInfo(@"%@ Verification code accepted.", self.tag);
-                                         [TSStorageManager storeServerToken:authToken signalingKey:signalingKey];
+                                         [weakSelf storeServerAuthToken:authToken signalingKey:signalingKey];
                                          [self didRegister];
                                          [TSSocketManager requestSocketOpen];
                                          [TSPreKeyManager registerPreKeysWithMode:RefreshPreKeysMode_SignedAndOneTime

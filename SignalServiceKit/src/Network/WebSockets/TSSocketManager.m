@@ -14,7 +14,6 @@
 #import "SubProtocol.pb.h"
 #import "TSAccountManager.h"
 #import "TSConstants.h"
-#import "TSStorageManager+keyingMaterial.h"
 #import "Threading.h"
 
 static const CGFloat kSocketHeartbeatPeriodSeconds = 30.f;

@@ -137,6 +137,8 @@ void setDatabaseInitialized()
 
 @property (nullable, atomic) YapDatabase *database;
 
+@property (nonatomic, copy) NSString *accountName;
+
 @end
 
 #pragma mark -
@@ -213,7 +215,7 @@ void setDatabaseInitialized()
     static TSStorageManager *sharedManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedManager = [[self alloc] initDefault];
+        sharedManager = [[self alloc] init];
 #if TARGET_OS_IPHONE
         [sharedManager protectSignalFiles];
 #endif
@@ -235,60 +237,50 @@ void setDatabaseInitialized()
 
 - (void)loadBackupIfNeeded
 {
-    self = [super init];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[self backupDatabasePath]]) {
 
-    if (![self tryToLoadDatabase]) {
-        // Failing to load the database is catastrophic.
-        //
-        // The best we can try to do is to discard the current database
-        // and behave like a clean install.
-        OWSProdCritical([OWSAnalyticsEvents storageErrorCouldNotLoadDatabase]);
+        NSString *walFilePath = [[self dbPath] stringByAppendingString:@"-wal"];
+        NSString *shmFilePath = [[self dbPath] stringByAppendingString:@"-shm"];
 
-        // Try to reset app by deleting database.
-        // Disabled resetting storage until we have better data on why this happens.
-        // [self resetSignalStorage];
+        [self __deleteFileIfNeededAtPath:walFilePath];
+        [self __deleteFileIfNeededAtPath:shmFilePath];
 
-        if (![self tryToLoadDatabase]) {
-            OWSProdCritical([OWSAnalyticsEvents storageErrorCouldNotLoadDatabaseSecondAttempt]);
+        NSError *error;
+        [[NSFileManager defaultManager] moveItemAtPath:[self backupDatabasePath] toPath:[self dbPath] error:&error];
 
-            // Sleep to give analytics events time to be delivered.
-            [NSThread sleepForTimeInterval:15.0f];
-
-            [NSException raise:TSStorageManagerExceptionNameNoDatabase format:@"Failed to initialize database."];
+        if (error) {
+            DDLogError(@"Error moving backed up db file: %@", error.localizedDescription);
         }
-
-        OWSSingletonAssert();
     }
-
-    return self;
 }
 
 - (BOOL)tryToLoadDatabase
 {
+    if (!self.accountName) {
+        DDLogError(@"You can't use without account name !!!");
+
+        return NO;
+    }
+
+    [self loadBackupIfNeeded];
 
     // We determine the database password first, since a side effect of
     // this can be deleting any existing database file (if we're recovering
     // from a corrupt keychain).
-    NSData *databasePassword = [self databasePassword];
 
     YapDatabaseOptions *options = [[YapDatabaseOptions alloc] init];
     options.corruptAction       = YapDatabaseCorruptAction_Fail;
+
+    __weak typeof (self)weakSelf = self;
     options.cipherKeyBlock = ^{
-        return databasePassword;
+        typeof(self)strongSelf = weakSelf;
+        return [strongSelf databasePassword];
     };
 
-#ifdef DEBUG
-    _database = [[OWSDatabase alloc] initWithPath:[self dbPath]
-                                       serializer:NULL
-                                     deserializer:[[self class] logOnFailureDeserializer]
-                                          options:options];
-#else
     _database = [[YapDatabase alloc] initWithPath:[self dbPath]
                                        serializer:NULL
                                      deserializer:[[self class] logOnFailureDeserializer]
                                           options:options];
-#endif
-
     if (!_database) {
         return NO;
     }
@@ -711,12 +703,16 @@ void setDatabaseInitialized()
     }
 }
 
-- (void)deleteDatabaseFile
+- (void)backupDataBaseFile
 {
+    if (!self.accountName) {
+        return;
+    }
+
     NSError *error;
-    [[NSFileManager defaultManager] removeItemAtPath:[self dbPath] error:&error];
+    [[NSFileManager defaultManager] moveItemAtPath:[self dbPath] toPath:[self backupDatabasePath] error:&error];
     if (error) {
-        DDLogError(@"Failed to delete database: %@", error.description);
+        DDLogError(@"Error moving DB file to backup path");
     }
 }
 
@@ -750,4 +746,3 @@ void setDatabaseInitialized()
 @end
 
 NS_ASSUME_NONNULL_END
-

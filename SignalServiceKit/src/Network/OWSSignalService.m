@@ -20,6 +20,7 @@ NSString *const kTSStorageManager_ManualCensorshipCircumventionDomain =
 @"kTSStorageManager_ManualCensorshipCircumventionDomain";
 NSString *const kTSStorageManager_ManualCensorshipCircumventionCountryCode =
 @"kTSStorageManager_ManualCensorshipCircumventionCountryCode";
+static NSString *TextSecureServerURL = @"wss://token-chat-service.herokuapp.com";
 
 NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 @"kNSNotificationName_IsCensorshipCircumventionActiveDidChange";

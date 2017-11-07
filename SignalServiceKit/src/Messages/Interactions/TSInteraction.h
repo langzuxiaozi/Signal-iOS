@@ -27,17 +27,6 @@ typedef NS_ENUM(NSInteger, OWSInteractionType) {
     OWSInteractionType_Offer,
 };
 
-typedef NS_ENUM(NSInteger, OWSInteractionType) {
-    OWSInteractionType_Unknown,
-    OWSInteractionType_IncomingMessage,
-    OWSInteractionType_OutgoingMessage,
-    OWSInteractionType_Error,
-    OWSInteractionType_Call,
-    OWSInteractionType_Info,
-    OWSInteractionType_UnreadIndicator,
-    OWSInteractionType_Offer,
-};
-
 @interface TSInteraction : TSYapDatabaseObject
 
 - (instancetype)initWithTimestamp:(uint64_t)timestamp inThread:(TSThread *)thread;
@@ -45,6 +34,10 @@ typedef NS_ENUM(NSInteger, OWSInteractionType) {
 @property (nonatomic, readonly) NSString *uniqueThreadId;
 @property (nonatomic, readonly) TSThread *thread;
 @property (nonatomic, readonly) uint64_t timestamp;
+
+@property (nonatomic, assign) TSPaymentState paymentState;
+
+- (NSString *)paymentStateText;
 
 - (BOOL)isDynamicInteraction;
 

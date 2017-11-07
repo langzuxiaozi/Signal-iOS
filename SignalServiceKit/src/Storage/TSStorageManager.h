@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)sharedManager;
 
+- (void)setupForAccountName:(NSString *)accountName isFirstLaunch:(BOOL)isFirstLaunch;
+
 /**
  * Returns NO if:
  *
@@ -66,3 +68,4 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
+
