@@ -15,14 +15,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 NSString *const kTSStorageManager_OWSSignalService = @"kTSStorageManager_OWSSignalService";
 NSString *const kTSStorageManager_isCensorshipCircumventionManuallyActivated =
-    @"kTSStorageManager_isCensorshipCircumventionManuallyActivated";
+@"kTSStorageManager_isCensorshipCircumventionManuallyActivated";
 NSString *const kTSStorageManager_ManualCensorshipCircumventionDomain =
-    @"kTSStorageManager_ManualCensorshipCircumventionDomain";
+@"kTSStorageManager_ManualCensorshipCircumventionDomain";
 NSString *const kTSStorageManager_ManualCensorshipCircumventionCountryCode =
-    @"kTSStorageManager_ManualCensorshipCircumventionCountryCode";
+@"kTSStorageManager_ManualCensorshipCircumventionCountryCode";
 
 NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
-    @"kNSNotificationName_IsCensorshipCircumventionActiveDidChange";
+@"kNSNotificationName_IsCensorshipCircumventionActiveDidChange";
 
 @interface OWSSignalService ()
 
@@ -124,7 +124,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     OWSAssert([NSThread isMainThread]);
 
     self.isCensorshipCircumventionActive
-        = (self.isCensorshipCircumventionManuallyActivated || self.hasCensoredPhoneNumber);
+    = (self.isCensorshipCircumventionManuallyActivated || self.hasCensoredPhoneNumber);
 }
 
 - (void)setIsCensorshipCircumventionActive:(BOOL)isCensorshipCircumventionActive
@@ -141,9 +141,9 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     }
 
     [[NSNotificationCenter defaultCenter]
-        postNotificationNameAsync:kNSNotificationName_IsCensorshipCircumventionActiveDidChange
-                           object:nil
-                         userInfo:nil];
+     postNotificationNameAsync:kNSNotificationName_IsCensorshipCircumventionActiveDidChange
+     object:nil
+     userInfo:nil];
 }
 
 - (BOOL)isCensorshipCircumventionActive
@@ -164,13 +164,21 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     }
 }
 
++ (void)setBaseURLPath:(NSString *)baseURLPath {
+    TextSecureServerURL = baseURLPath;
+}
+
++ (NSString *)baseURLPath {
+    return TextSecureServerURL;
+}
+
 - (AFHTTPSessionManager *)defaultSignalServiceSessionManager
 {
-    NSURL *baseURL = [[NSURL alloc] initWithString:textSecureServerURL];
+    NSURL *baseURL = [[NSURL alloc] initWithString:OWSSignalService.baseURLPath];
     OWSAssert(baseURL);
     NSURLSessionConfiguration *sessionConf = NSURLSessionConfiguration.ephemeralSessionConfiguration;
     AFHTTPSessionManager *sessionManager =
-        [[AFHTTPSessionManager alloc] initWithBaseURL:baseURL sessionConfiguration:sessionConf];
+    [[AFHTTPSessionManager alloc] initWithBaseURL:baseURL sessionConfiguration:sessionConf];
 
     sessionManager.securityPolicy = [OWSHTTPSecurityPolicy sharedPolicy];
     sessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
@@ -192,7 +200,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     };
     NSURL *baseURL = [[NSURL alloc] initWithString:[self.censorshipConfiguration frontingHost:localNumber]];
     OWSAssert(baseURL);
-    
+
     return baseURL;
 }
 
@@ -200,8 +208,8 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 {
     NSURLSessionConfiguration *sessionConf = NSURLSessionConfiguration.ephemeralSessionConfiguration;
     AFHTTPSessionManager *sessionManager =
-        [[AFHTTPSessionManager alloc] initWithBaseURL:self.domainFrontingBaseURL sessionConfiguration:sessionConf];
-    
+    [[AFHTTPSessionManager alloc] initWithBaseURL:self.domainFrontingBaseURL sessionConfiguration:sessionConf];
+
     sessionManager.securityPolicy = [[self class] googlePinningPolicy];
 
     sessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
@@ -228,13 +236,13 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 {
     NSURL *baseURL = [[NSURL alloc] initWithString:textSecureCDNServerURL];
     OWSAssert(baseURL);
-    
+
     NSURLSessionConfiguration *sessionConf = NSURLSessionConfiguration.ephemeralSessionConfiguration;
     AFHTTPSessionManager *sessionManager =
-        [[AFHTTPSessionManager alloc] initWithBaseURL:baseURL sessionConfiguration:sessionConf];
+    [[AFHTTPSessionManager alloc] initWithBaseURL:baseURL sessionConfiguration:sessionConf];
 
     sessionManager.securityPolicy = [OWSHTTPSecurityPolicy sharedPolicy];
-    
+
     // Default acceptable content headers are rejected by AWS
     sessionManager.responseSerializer.acceptableContentTypes = nil;
 
@@ -246,14 +254,14 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     NSURLSessionConfiguration *sessionConf = NSURLSessionConfiguration.ephemeralSessionConfiguration;
     AFHTTPSessionManager *sessionManager =
     [[AFHTTPSessionManager alloc] initWithBaseURL:self.domainFrontingBaseURL sessionConfiguration:sessionConf];
-    
+
     sessionManager.securityPolicy = [[self class] googlePinningPolicy];
-    
+
     sessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
     [sessionManager.requestSerializer setValue:self.censorshipConfiguration.CDNReflectorHost forHTTPHeaderField:@"Host"];
-    
+
     sessionManager.responseSerializer = [AFJSONResponseSerializer serializer];
-    
+
     return sessionManager;
 }
 
@@ -276,7 +284,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
                     reason:[NSString stringWithFormat:@"Missing signing certificate for service googlePinningPolicy"]
                     userInfo:nil];
         }
-        
+
         NSData *googleCertData = [NSData dataWithContentsOfFile:path options:0 error:&error];
         if (!googleCertData) {
             if (error) {
@@ -286,7 +294,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
                 @throw [NSException exceptionWithName:@"OWSSignalServiceHTTPSecurityPolicy" reason:reason userInfo:nil];
             }
         }
-        
+
         NSSet<NSData *> *certificates = [NSSet setWithObject:googleCertData];
         securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate withPinnedCertificates:certificates];
     });
@@ -358,3 +366,4 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 @end
 
 NS_ASSUME_NONNULL_END
+

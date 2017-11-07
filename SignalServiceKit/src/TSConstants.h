@@ -24,8 +24,7 @@ typedef enum { kSMSVerification, kPhoneNumberVerification } VerificationTranspor
 //#ifndef DEBUG
 
 // Production
-#define textSecureWebSocketAPI @"wss://textsecure-service.whispersystems.org/v1/websocket/"
-#define textSecureServerURL @"https://textsecure-service.whispersystems.org/"
+
 #define textSecureCDNServerURL @"https://cdn.signal.org"
 #define textSecureServiceReflectorHost @"signal-reflector-meek.appspot.com"
 #define textSecureCDNReflectorHost @"signal-cdn-reflector.appspot.com"
@@ -68,3 +67,4 @@ typedef void (^failedPushRegistrationRequestBlock)(TSPushRegistrationError error
 
 
 #endif
+

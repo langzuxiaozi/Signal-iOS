@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 NSString *const TSStorageManagerExceptionNameDatabasePasswordInaccessible = @"TSStorageManagerExceptionNameDatabasePasswordInaccessible";
 NSString *const TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded =
-    @"TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded";
+@"TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded";
 NSString *const TSStorageManagerExceptionNameDatabasePasswordUnwritable = @"TSStorageManagerExceptionNameDatabasePasswordUnwritable";
 NSString *const TSStorageManagerExceptionNameNoDatabase = @"TSStorageManagerExceptionNameNoDatabase";
 
@@ -221,7 +221,19 @@ void setDatabaseInitialized()
     return sharedManager;
 }
 
-- (instancetype)initDefault
+- (NSString *)backupDatabasePath
+{
+    return [[self backupDirectoryPath] stringByAppendingFormat:@"/Signal-%@.sqlite", self.accountName];
+}
+
+- (void)__deleteFileIfNeededAtPath:(NSString *)path
+{
+    if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+    }
+}
+
+- (void)loadBackupIfNeeded
 {
     self = [super init];
 
@@ -280,6 +292,7 @@ void setDatabaseInitialized()
     if (!_database) {
         return NO;
     }
+
     _dbReadConnection = self.newDatabaseConnection;
     _dbReadWriteConnection = self.newDatabaseConnection;
 
@@ -310,8 +323,50 @@ void setDatabaseInitialized()
     };
 }
 
+- (void)setupForAccountName:(NSString *)accountName isFirstLaunch:(BOOL)isFirstLaunch
+{
+    self.accountName = [accountName copy];
+
+    if (isFirstLaunch) {
+
+        NSError *keyFetchError;
+        NSString *previousVersionDBPassword = [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
+        if (previousVersionDBPassword) {
+
+            NSError *error;
+            [SAMKeychain setPassword:previousVersionDBPassword forService:self.accountName account:keychainDBPassAccount error:&error];
+        }
+    }
+
+    [self setupDatabaseWithSafeBlockingMigrations:^{
+
+    }];
+}
+
+- (NSString *)backupDirectoryPath
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSURL *documentsURL = [[fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask]lastObject];
+
+    return [[documentsURL path] stringByAppendingFormat:@"/%@", @"Backup"];
+}
+
+- (void)createBackupDirectoryIfNeeded
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *backupDirectoryPath = [self backupDirectoryPath];
+
+    if (![fileManager fileExistsAtPath:backupDirectoryPath]) {
+        NSError *error;
+        [fileManager createDirectoryAtPath:backupDirectoryPath withIntermediateDirectories:NO attributes:nil error:&error];
+    }
+}
+
 - (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)())safeBlockingMigrationsBlock
 {
+    [self createBackupDirectoryIfNeeded];
+    [self tryToLoadDatabase];
+
     // Synchronously register extensions which are essential for views.
     [TSDatabaseView registerThreadInteractionsDatabaseView];
     [TSDatabaseView registerThreadDatabaseView];
@@ -351,7 +406,7 @@ void setDatabaseInitialized()
     OWSFailedMessagesJob *failedMessagesJob = [[OWSFailedMessagesJob alloc] initWithStorageManager:self];
     [failedMessagesJob asyncRegisterDatabaseExtensions];
     OWSFailedAttachmentDownloadsJob *failedAttachmentDownloadsMessagesJob =
-        [[OWSFailedAttachmentDownloadsJob alloc] initWithStorageManager:self];
+    [[OWSFailedAttachmentDownloadsJob alloc] initWithStorageManager:self];
     [failedAttachmentDownloadsMessagesJob asyncRegisterDatabaseExtensions];
 
     // NOTE: [TSDatabaseView asyncRegistrationCompletion] ensures that
@@ -461,7 +516,7 @@ void setDatabaseInitialized()
 
     NSError *keyFetchError;
     NSString *dbPassword =
-        [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
+    [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
 
     if (keyFetchError) {
         UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
@@ -656,8 +711,19 @@ void setDatabaseInitialized()
     }
 }
 
+- (void)deleteDatabaseFile
+{
+    NSError *error;
+    [[NSFileManager defaultManager] removeItemAtPath:[self dbPath] error:&error];
+    if (error) {
+        DDLogError(@"Failed to delete database: %@", error.description);
+    }
+}
+
 - (void)resetSignalStorage
 {
+    [self backupDataBaseFile];
+
     self.database = nil;
     _dbReadConnection = nil;
     _dbReadWriteConnection = nil;
@@ -684,3 +750,4 @@ void setDatabaseInitialized()
 @end
 
 NS_ASSUME_NONNULL_END
+

@@ -90,6 +90,8 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 // - uploaded push tokens
 - (void)didRegister;
 
+- (void)storeLocalNumber:(NSString *)localNumber;
+
 #if TARGET_OS_IPHONE
 
 /**
@@ -101,7 +103,7 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
                                         voipToken:(NSString *)voipToken
                                           success:(void (^)())successHandler
                                           failure:(void (^)(NSError *error))failureHandler
-    NS_SWIFT_NAME(registerForPushNotifications(pushToken:voipToken:success:failure:));
+NS_SWIFT_NAME(registerForPushNotifications(pushToken:voipToken:success:failure:));
 
 #endif
 
@@ -110,3 +112,4 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 @end
 
 NS_ASSUME_NONNULL_END
+
