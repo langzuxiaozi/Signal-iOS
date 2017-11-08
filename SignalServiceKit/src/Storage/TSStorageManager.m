@@ -723,11 +723,10 @@ void setDatabaseInitialized()
     }
 
     self.database = nil;
-
     _dbReadConnection = nil;
     _dbReadWriteConnection = nil;
 
-    [self deletePasswordFromKeychain];
+    [TSAttachmentStream deleteAttachments];
 
     [self deleteDatabaseFile];
 
