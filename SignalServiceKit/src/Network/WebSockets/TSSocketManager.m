@@ -389,7 +389,10 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 
             if (!decryptedPayload) {
                 DDLogWarn(@"%@ Failed to decrypt incoming payload or bad HMAC", self.tag);
-                [self sendWebSocketMessageAcknowledgement:message];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self sendWebSocketMessageAcknowledgement:message];
+                });
+
                 return;
             }
 
