@@ -30,8 +30,11 @@ NSString *const TSStorageManagerExceptionNameDatabasePasswordUnwritable = @"TSSt
 NSString *const TSStorageManagerExceptionNameNoDatabase = @"TSStorageManagerExceptionNameNoDatabase";
 
 static const NSString *const databaseName = @"Signal.sqlite";
+static const NSString *const keysDBName = @"SignalKeys.sqlite";
 static NSString *keychainService          = @"TSKeyChainService";
 static NSString *keychainDBPassAccount    = @"TSDatabasePass";
+static NSString *keychainKeysService          = @"TSKeysChainService";
+static NSString *keychainKeysDBPassAccount    = @"TSKeysDatabasePass";
 
 #pragma mark -
 
@@ -136,6 +139,7 @@ void setDatabaseInitialized()
 @interface TSStorageManager ()
 
 @property (nullable, atomic) YapDatabase *database;
+@property (nullable, atomic) YapDatabase *keysDatabase;
 
 @property (nonatomic, copy) NSString *accountName;
 
@@ -239,14 +243,15 @@ void setDatabaseInitialized()
 {
     if ([[NSFileManager defaultManager] fileExistsAtPath:[self backupDatabasePath]]) {
 
-        NSString *walFilePath = [[self dbPath] stringByAppendingString:@"-wal"];
-        NSString *shmFilePath = [[self dbPath] stringByAppendingString:@"-shm"];
+        NSString *databasePath = [self dbPathWithName:databaseName];
+        NSString *walFilePath = [databasePath stringByAppendingString:@"-wal"];
+        NSString *shmFilePath = [databasePath stringByAppendingString:@"-shm"];
 
         [self __deleteFileIfNeededAtPath:walFilePath];
         [self __deleteFileIfNeededAtPath:shmFilePath];
 
         NSError *error;
-        [[NSFileManager defaultManager] moveItemAtPath:[self backupDatabasePath] toPath:[self dbPath] error:&error];
+        [[NSFileManager defaultManager] moveItemAtPath:[self backupDatabasePath] toPath:databasePath error:&error];
 
         if (error) {
             DDLogError(@"Error moving backed up db file: %@", error.localizedDescription);
@@ -277,7 +282,7 @@ void setDatabaseInitialized()
         return [strongSelf databasePassword];
     };
 
-    _database = [[YapDatabase alloc] initWithPath:[self dbPath]
+    _database = [[YapDatabase alloc] initWithPath:[self dbPathWithName:databaseName]
                                        serializer:NULL
                                      deserializer:[[self class] logOnFailureDeserializer]
                                           options:options];
@@ -287,6 +292,26 @@ void setDatabaseInitialized()
 
     _dbReadConnection = self.newDatabaseConnection;
     _dbReadWriteConnection = self.newDatabaseConnection;
+
+    YapDatabaseOptions *keysDBOptions = [[YapDatabaseOptions alloc] init];
+    keysDBOptions.corruptAction       = YapDatabaseCorruptAction_Fail;
+
+    keysDBOptions.cipherKeyBlock = ^{
+        typeof(self)strongSelf = weakSelf;
+        return [strongSelf keysDBPassword];
+    };
+
+    _keysDatabase = [[YapDatabase alloc] initWithPath:[self dbPathWithName:keysDBName]
+                                           serializer:NULL
+                                         deserializer:[[self class] logOnFailureDeserializer]
+                                              options:keysDBOptions];
+
+    if (!_keysDatabase) {
+        return NO;
+    }
+
+    _keysDBReadConnection = self.newKeysDatabaseConnection;
+    _keysDBReadWriteConnection = self.newKeysDatabaseConnection;
 
     return YES;
 }
@@ -409,9 +434,16 @@ void setDatabaseInitialized()
 
 - (void)protectSignalFiles {
     [self protectFolderAtPath:[TSAttachmentStream attachmentsFolder]];
-    [self protectFolderAtPath:[self dbPath]];
-    [self protectFolderAtPath:[[self dbPath] stringByAppendingString:@"-shm"]];
-    [self protectFolderAtPath:[[self dbPath] stringByAppendingString:@"-wal"]];
+
+    NSString *databasePath = [self dbPathWithName:databaseName];
+    [self protectFolderAtPath:databasePath];
+    [self protectFolderAtPath:[databasePath stringByAppendingString:@"-shm"]];
+    [self protectFolderAtPath:[databasePath stringByAppendingString:@"-wal"]];
+
+    NSString *keysDBPath = [self dbPathWithName:keysDBName];
+    [self protectFolderAtPath:keysDBPath];
+    [self protectFolderAtPath:[keysDBPath stringByAppendingString:@"-shm"]];
+    [self protectFolderAtPath:[keysDBPath stringByAppendingString:@"-wal"]];
 }
 
 - (void)protectFolderAtPath:(NSString *)path {
@@ -438,22 +470,27 @@ void setDatabaseInitialized()
     return self.database.newConnection;
 }
 
+- (nullable YapDatabaseConnection *)newKeysDatabaseConnection
+{
+    return self.keysDatabase.newConnection;
+}
+
 - (BOOL)userSetPassword {
     return FALSE;
 }
 
 - (BOOL)dbExists {
-    return [[NSFileManager defaultManager] fileExistsAtPath:[self dbPath]];
+    return [[NSFileManager defaultManager] fileExistsAtPath:[self dbPathWithName:databaseName]];
 }
 
-- (NSString *)dbPath {
+- (NSString *)dbPathWithName:(NSString *)name {
     NSString *databasePath;
 
     NSFileManager *fileManager = [NSFileManager defaultManager];
 #if TARGET_OS_IPHONE
     NSURL *fileURL = [[fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
     NSString *path = [fileURL path];
-    databasePath = [path stringByAppendingPathComponent:databaseName];
+    databasePath = [path stringByAppendingPathComponent:name];
 #elif TARGET_OS_MAC
 
     NSString *bundleID = [[NSBundle mainBundle] bundleIdentifier];
@@ -527,7 +564,7 @@ void setDatabaseInitialized()
         // or the keychain has become corrupt.  Either way, we want to get back to a
         // "known good state" and behave like a new install.
 
-        BOOL shouldHavePassword = [NSFileManager.defaultManager fileExistsAtPath:[self dbPath]];
+        BOOL shouldHavePassword = [NSFileManager.defaultManager fileExistsAtPath:[self dbPathWithName:databaseName]];
         if (shouldHavePassword) {
             OWSProdCritical([OWSAnalyticsEvents storageErrorCouldNotLoadDatabaseSecondAttempt]);
         }
@@ -541,6 +578,44 @@ void setDatabaseInitialized()
     return [dbPassword dataUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (NSData *)keysDBPassword
+{
+    [SAMKeychain setAccessibilityType:kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly];
+
+    NSError *keyFetchError;
+    NSString *dbPassword =
+    [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
+
+    if (keyFetchError) {
+        UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
+        NSString *errorDescription = [NSString stringWithFormat:@"Database password inaccessible. No unlock since device restart? Error: %@ ApplicationState: %d", keyFetchError, (int)applicationState];
+        DDLogError(@"%@ %@", self.tag, errorDescription);
+        [DDLog flushLog];
+
+        if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+            // TODO: Rather than crash here, we should detect the situation earlier
+            // and exit gracefully - (in the app delegate?). See the `
+            // This is a last ditch effort to avoid blowing away the user's database.
+            [self backgroundedAppDatabasePasswordInaccessibleWithErrorDescription:errorDescription];
+        }
+
+        // At this point, either this is a new install so there's no existing password to retrieve
+        // or the keychain has become corrupt.  Either way, we want to get back to a
+        // "known good state" and behave like a new install.
+
+        BOOL shouldHavePassword = [NSFileManager.defaultManager fileExistsAtPath:[self dbPathWithName:databaseName]];
+        if (shouldHavePassword) {
+            OWSProdCritical([OWSAnalyticsEvents storageErrorCouldNotLoadDatabaseSecondAttempt]);
+        }
+
+        // Try to reset app by deleting database.
+        [self resetSignalStorageWithBackup:NO];
+
+        dbPassword = [self createAndSetNewKeysDatabasePassword];
+    }
+
+    return [dbPassword dataUsingEncoding:NSUTF8StringEncoding];
+}
 
 - (NSString *)createAndSetNewDatabasePassword
 {
@@ -564,11 +639,29 @@ void setDatabaseInitialized()
     return newDBPassword;
 }
 
-#pragma mark - convenience methods
+- (NSString *)createAndSetNewKeysDatabasePassword
+{
+    NSString *newDBPassword = [[Randomness generateRandomBytes:30] base64EncodedString];
+    NSError *keySetError;
+    [SAMKeychain setPassword:newDBPassword forService:keychainKeysService account:keychainKeysDBPassAccount error:&keySetError];
+    if (keySetError) {
+        OWSProdCritical([OWSAnalyticsEvents storageErrorCouldNotStoreDatabasePassword]);
 
-- (void)purgeCollection:(NSString *)collection {
-    [self.dbReadWriteConnection purgeCollection:collection];
+        [self deleteKeysPasswordFromKeychain];
+
+        // Sleep to give analytics events time to be delivered.
+        [NSThread sleepForTimeInterval:15.0f];
+
+        [NSException raise:TSStorageManagerExceptionNameDatabasePasswordUnwritable
+                    format:@"Setting DB password failed with error: %@", keySetError];
+    } else {
+        DDLogWarn(@"Succesfully set new DB password.");
+    }
+
+    return newDBPassword;
 }
+
+#pragma mark - convenience methods
 
 - (void)setObject:(id)object forKey:(NSString *)key inCollection:(NSString *)collection {
     [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
@@ -576,8 +669,20 @@ void setDatabaseInitialized()
     }];
 }
 
+- (void)setKeysObject:(id)object forKey:(NSString *)key inCollection:(NSString *)collection {
+    [self.keysDBReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction setObject:object forKey:key inCollection:collection];
+    }];
+}
+
 - (void)removeObjectForKey:(NSString *)string inCollection:(NSString *)collection {
     [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction removeObjectForKey:string inCollection:collection];
+    }];
+}
+
+- (void)removeKeysObjectForKey:(NSString *)string inCollection:(NSString *)collection {
+    [self.keysDBReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         [transaction removeObjectForKey:string inCollection:collection];
     }];
 }
@@ -592,22 +697,14 @@ void setDatabaseInitialized()
     return object;
 }
 
-- (nullable NSDictionary *)dictionaryForKey:(NSString *)key inCollection:(NSString *)collection
-{
-    __block NSDictionary *object;
+- (id)keysObjectForKey:(NSString *)key inCollection:(NSString *)collection {
+    __block NSString *object;
 
-    [self.dbReadConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+    [self.keysDBReadConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         object = [transaction objectForKey:key inCollection:collection];
     }];
 
     return object;
-}
-
-- (nullable NSString *)stringForKey:(NSString *)key inCollection:(NSString *)collection
-{
-    NSString *string = [self objectForKey:key inCollection:collection];
-
-    return string;
 }
 
 - (BOOL)boolForKey:(NSString *)key inCollection:(NSString *)collection {
@@ -616,47 +713,41 @@ void setDatabaseInitialized()
     return [boolNum boolValue];
 }
 
-- (nullable NSData *)dataForKey:(NSString *)key inCollection:(NSString *)collection
-{
-    NSData *data = [self objectForKey:key inCollection:collection];
-    return data;
-}
-
 - (nullable ECKeyPair *)keyPairForKey:(NSString *)key inCollection:(NSString *)collection
 {
-    ECKeyPair *keyPair = [self objectForKey:key inCollection:collection];
+    ECKeyPair *keyPair = [self keysObjectForKey:key inCollection:collection];
 
     return keyPair;
 }
 
 - (nullable PreKeyRecord *)preKeyRecordForKey:(NSString *)key inCollection:(NSString *)collection
 {
-    PreKeyRecord *preKeyRecord = [self objectForKey:key inCollection:collection];
+    PreKeyRecord *preKeyRecord = [self keysObjectForKey:key inCollection:collection];
 
     return preKeyRecord;
 }
 
 - (nullable SignedPreKeyRecord *)signedPreKeyRecordForKey:(NSString *)key inCollection:(NSString *)collection
 {
-    SignedPreKeyRecord *preKeyRecord = [self objectForKey:key inCollection:collection];
+    SignedPreKeyRecord *preKeyRecord = [self keysObjectForKey:key inCollection:collection];
 
     return preKeyRecord;
 }
 
 - (int)intForKey:(NSString *)key inCollection:(NSString *)collection {
-    int integer = [[self objectForKey:key inCollection:collection] intValue];
+    int integer = [[self keysObjectForKey:key inCollection:collection] intValue];
 
     return integer;
 }
 
 - (void)setInt:(int)integer forKey:(NSString *)key inCollection:(NSString *)collection {
-    [self setObject:[NSNumber numberWithInt:integer] forKey:key inCollection:collection];
+    [self setKeysObject:[NSNumber numberWithInt:integer] forKey:key inCollection:collection];
 }
 
 - (int)incrementIntForKey:(NSString *)key inCollection:(NSString *)collection
 {
     __block int value = 0;
-    [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+    [self.keysDBReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         value = [[transaction objectForKey:key inCollection:collection] intValue];
         value++;
         [transaction setObject:@(value) forKey:key inCollection:collection];
@@ -666,7 +757,7 @@ void setDatabaseInitialized()
 
 - (nullable NSDate *)dateForKey:(NSString *)key inCollection:(NSString *)collection
 {
-    NSNumber *value = [self objectForKey:key inCollection:collection];
+    NSNumber *value = [self keysObjectForKey:key inCollection:collection];
     if (value) {
         return [NSDate dateWithTimeIntervalSince1970:value.doubleValue];
     } else {
@@ -676,7 +767,7 @@ void setDatabaseInitialized()
 
 - (void)setDate:(NSDate *)value forKey:(NSString *)key inCollection:(NSString *)collection
 {
-    [self setObject:@(value.timeIntervalSince1970) forKey:key inCollection:collection];
+    [self setKeysObject:@(value.timeIntervalSince1970) forKey:key inCollection:collection];
 }
 
 - (void)deleteThreadsAndMessages {
@@ -694,10 +785,15 @@ void setDatabaseInitialized()
     [SAMKeychain deletePasswordForService:keychainService account:keychainDBPassAccount];
 }
 
+- (void)deleteKeysPasswordFromKeychain
+{
+    [SAMKeychain deletePasswordForService:keychainKeysService account:keychainKeysDBPassAccount];
+}
+
 - (void)deleteDatabaseFile
 {
     NSError *error;
-    [[NSFileManager defaultManager] removeItemAtPath:[self dbPath] error:&error];
+    [[NSFileManager defaultManager] removeItemAtPath:[self dbPathWithName:databaseName] error:&error];
     if (error) {
         DDLogError(@"Failed to delete database: %@", error.description);
     }
@@ -710,7 +806,7 @@ void setDatabaseInitialized()
     }
 
     NSError *error;
-    [[NSFileManager defaultManager] moveItemAtPath:[self dbPath] toPath:[self backupDatabasePath] error:&error];
+    [[NSFileManager defaultManager] moveItemAtPath:[self dbPathWithName:databaseName] toPath:[self backupDatabasePath] error:&error];
     if (error) {
         DDLogError(@"Error moving DB file to backup path");
     }
@@ -718,6 +814,16 @@ void setDatabaseInitialized()
 
 - (void)resetSignalStorageWithBackup:(BOOL)withBackup
 {
+    NSError *error;
+    [[NSFileManager defaultManager] removeItemAtPath:[self dbPathWithName:keysDBName] error:&error];
+    if (error) {
+        DDLogError(@"Failed to delete KEYS database: %@", error.description);
+    }
+
+    _keysDatabase = nil;
+    _keysDBReadConnection = nil;
+    _keysDBReadWriteConnection = nil;
+
     if (withBackup) {
         [self backupDataBaseFile];
     }

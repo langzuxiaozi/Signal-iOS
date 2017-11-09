@@ -18,7 +18,7 @@
         return [self loadPreKey:kPreKeyOfLastResortId];
     } else {
         PreKeyRecord *lastResort =
-            [[PreKeyRecord alloc] initWithId:kPreKeyOfLastResortId keyPair:[Curve25519 generateKeyPair]];
+        [[PreKeyRecord alloc] initWithId:kPreKeyOfLastResortId keyPair:[Curve25519 generateKeyPair]];
         [self storePreKey:kPreKeyOfLastResortId preKeyRecord:lastResort];
         return lastResort;
     }
@@ -46,13 +46,13 @@
 
 - (void)storePreKeyRecords:(NSArray *)preKeyRecords {
     for (PreKeyRecord *record in preKeyRecords) {
-        [self setObject:record forKey:[self keyFromInt:record.Id] inCollection:TSStorageManagerPreKeyStoreCollection];
+        [self setKeysObject:record forKey:[self keyFromInt:record.Id] inCollection:TSStorageManagerPreKeyStoreCollection];
     }
 }
 
 - (PreKeyRecord *)loadPreKey:(int)preKeyId {
     PreKeyRecord *preKeyRecord =
-        [self preKeyRecordForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
+    [self preKeyRecordForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
 
     if (!preKeyRecord) {
         @throw [NSException exceptionWithName:InvalidKeyIdException
@@ -64,17 +64,17 @@
 }
 
 - (void)storePreKey:(int)preKeyId preKeyRecord:(PreKeyRecord *)record {
-    [self setObject:record forKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
+    [self setKeysObject:record forKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
 }
 
 - (BOOL)containsPreKey:(int)preKeyId {
     PreKeyRecord *preKeyRecord =
-        [self preKeyRecordForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
+    [self preKeyRecordForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
     return (preKeyRecord != nil);
 }
 
 - (void)removePreKey:(int)preKeyId {
-    [self removeObjectForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
+    [self removeKeysObjectForKey:[self keyFromInt:preKeyId] inCollection:TSStorageManagerPreKeyStoreCollection];
 }
 
 - (int)nextPreKeyId {

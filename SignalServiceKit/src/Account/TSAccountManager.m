@@ -54,7 +54,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
     }
 
     _networkManager = networkManager;
-    _dbConnection = [storageManager newDatabaseConnection];
+    _dbConnection = [storageManager newKeysDatabaseConnection];
 
     OWSSingletonAssert();
 
@@ -76,7 +76,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 - (YapDatabaseConnection *)dbConnection
 {
     if (!_dbConnection) {
-        _dbConnection = [TSStorageManager sharedManager].newDatabaseConnection;
+        _dbConnection = [TSStorageManager sharedManager].newKeysDatabaseConnection;
     }
 
     return _dbConnection;
