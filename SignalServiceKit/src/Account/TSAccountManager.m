@@ -35,6 +35,8 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 @property (nonatomic, readonly) BOOL isRegistered;
 @property (nonatomic, nullable) NSString *phoneNumberAwaitingVerification;
 @property (nonatomic, nullable) NSString *cachedLocalNumber;
+
+@property (nonatomic, strong) YapDatabaseConnection *keysDBConnection;
 @property (nonatomic, strong) YapDatabaseConnection *dbConnection;
 
 @end
@@ -54,7 +56,8 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
     }
 
     _networkManager = networkManager;
-    _dbConnection = [storageManager newKeysDatabaseConnection];
+    _keysDBConnection = [storageManager newKeysDatabaseConnection];
+    _dbConnection = [storageManager newDatabaseConnection];
 
     OWSSingletonAssert();
 
@@ -73,10 +76,19 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
     return sharedInstance;
 }
 
+- (YapDatabaseConnection *)keysDBConnection
+{
+    if (!_keysDBConnection) {
+        _keysDBConnection = [TSStorageManager sharedManager].newKeysDatabaseConnection;
+    }
+
+    return _keysDBConnection;
+}
+
 - (YapDatabaseConnection *)dbConnection
 {
     if (!_dbConnection) {
-        _dbConnection = [TSStorageManager sharedManager].newKeysDatabaseConnection;
+        _dbConnection = [TSStorageManager sharedManager].newDatabaseConnection;
     }
 
     return _dbConnection;
@@ -98,7 +110,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
         _isRegistered = NO;
         _cachedLocalNumber = nil;
         _phoneNumberAwaitingVerification = nil;
-        [self.dbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
+        [self.keysDBConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
             [transaction removeAllObjectsInCollection:TSAccountManager_UserAccountCollection];
         }];
     }
@@ -170,17 +182,17 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 - (nullable NSString *)storedLocalNumber
 {
     @synchronized (self) {
-        return [self.dbConnection stringForKey:TSAccountManager_RegisteredNumberKey
-                                  inCollection:TSStorageUserAccountCollection];
+        return [self.keysDBConnection stringForKey:TSAccountManager_RegisteredNumberKey
+                                      inCollection:TSStorageUserAccountCollection];
     }
 }
 
 - (void)storeLocalNumber:(NSString *)localNumber
 {
     @synchronized (self) {
-        [self.dbConnection setObject:localNumber
-                              forKey:TSAccountManager_RegisteredNumberKey
-                        inCollection:TSStorageUserAccountCollection];
+        [self.keysDBConnection setObject:localNumber
+                                  forKey:TSAccountManager_RegisteredNumberKey
+                            inCollection:TSStorageUserAccountCollection];
     }
 }
 
@@ -191,16 +203,16 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 
 - (uint32_t)getOrGenerateRegistrationId
 {
-    uint32_t registrationID = [[self.dbConnection objectForKey:TSAccountManager_LocalRegistrationIdKey
-                                                  inCollection:TSStorageUserAccountCollection] unsignedIntValue];
+    uint32_t registrationID = [[self.keysDBConnection objectForKey:TSAccountManager_LocalRegistrationIdKey
+                                                      inCollection:TSStorageUserAccountCollection] unsignedIntValue];
 
     if (registrationID == 0) {
         registrationID = (uint32_t)arc4random_uniform(16380) + 1;
         DDLogWarn(@"%@ Generated a new registrationID: %u", self.tag, registrationID);
 
-        [self.dbConnection setObject:[NSNumber numberWithUnsignedInteger:registrationID]
-                              forKey:TSAccountManager_LocalRegistrationIdKey
-                        inCollection:TSStorageUserAccountCollection];
+        [self.keysDBConnection setObject:[NSNumber numberWithUnsignedInteger:registrationID]
+                                  forKey:TSAccountManager_LocalRegistrationIdKey
+                            inCollection:TSStorageUserAccountCollection];
     }
 }
 
@@ -407,8 +419,14 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 
 - (nullable NSString *)signalingKey
 {
-    return [self.dbConnection stringForKey:TSAccountManager_ServerSignalingKey
-                              inCollection:TSAccountManager_UserAccountCollection];
+    NSString *keysSignalingKey = [self.keysDBConnection stringForKey:TSAccountManager_ServerSignalingKey
+                                                        inCollection:TSAccountManager_UserAccountCollection];
+    if (!keysSignalingKey) {
+        keysSignalingKey = [self.dbConnection stringForKey:TSAccountManager_ServerSignalingKey
+                                              inCollection:TSAccountManager_UserAccountCollection];
+    }
+
+    return keysSignalingKey;
 }
 
 + (nullable NSString *)serverAuthToken
@@ -428,10 +446,12 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
         [transaction setObject:authToken
                         forKey:TSAccountManager_ServerAuthToken
                   inCollection:TSAccountManager_UserAccountCollection];
+    }];
+
+    [self.keysDBConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction * _Nonnull transaction) {
         [transaction setObject:signalingKey
                         forKey:TSAccountManager_ServerSignalingKey
                   inCollection:TSAccountManager_UserAccountCollection];
-
     }];
 }
 
@@ -457,7 +477,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
                                               if (!IsNSErrorNetworkFailure(error)) {
                                                   OWSProdError([OWSAnalyticsEvents accountsErrorUnregisterAccountRequestFailed]);
                                               }
-                                              DDLogError(@"%@ Failed to unregister with error: %@", self.tag, error);
+                                            DDLogError(@"%@ Failed to unregister with error: %@", self.tag, error);
                                               failureBlock(error);
                                           }];
 }
