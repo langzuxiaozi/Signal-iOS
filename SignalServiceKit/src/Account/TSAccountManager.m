@@ -214,6 +214,8 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
                                   forKey:TSAccountManager_LocalRegistrationIdKey
                             inCollection:TSStorageUserAccountCollection];
     }
+
+    return registrationID;
 }
 
 - (void)registerForPushNotificationsWithPushToken:(NSString *)pushToken
@@ -477,7 +479,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
                                               if (!IsNSErrorNetworkFailure(error)) {
                                                   OWSProdError([OWSAnalyticsEvents accountsErrorUnregisterAccountRequestFailed]);
                                               }
-                                            DDLogError(@"%@ Failed to unregister with error: %@", self.tag, error);
+                                              DDLogError(@"%@ Failed to unregister with error: %@", self.tag, error);
                                               failureBlock(error);
                                           }];
 }

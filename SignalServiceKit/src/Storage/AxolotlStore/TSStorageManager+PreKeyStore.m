@@ -14,12 +14,15 @@
 @implementation TSStorageManager (PreKeyStore)
 
 - (PreKeyRecord *)getOrGenerateLastResortKey {
-    if ([self containsPreKey:kPreKeyOfLastResortId]) {
-        return [self loadPreKey:kPreKeyOfLastResortId];
+
+    int resortID = [self getOrGenerateResortID];
+
+    if ([self containsPreKey:resortID]) {
+        return [self loadPreKey:resortID];
     } else {
         PreKeyRecord *lastResort =
-        [[PreKeyRecord alloc] initWithId:kPreKeyOfLastResortId keyPair:[Curve25519 generateKeyPair]];
-        [self storePreKey:kPreKeyOfLastResortId preKeyRecord:lastResort];
+        [[PreKeyRecord alloc] initWithId:resortID keyPair:[Curve25519 generateKeyPair]];
+        [self storePreKey:resortID preKeyRecord:lastResort];
         return lastResort;
     }
 }
@@ -41,6 +44,7 @@
 
         [self setInt:preKeyId forKey:TSNextPrekeyIdKey inCollection:TSStorageInternalSettingsCollection];
     }
+
     return preKeyRecords;
 }
 
@@ -106,3 +110,4 @@
 }
 
 @end
+

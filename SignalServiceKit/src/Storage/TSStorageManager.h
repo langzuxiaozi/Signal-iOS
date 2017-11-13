@@ -20,6 +20,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)setupForAccountName:(NSString *)accountName isFirstLaunch:(BOOL)isFirstLaunch;
 
+- (int)getOrGenerateResortID;
+
 /**
  * Returns NO if:
  *

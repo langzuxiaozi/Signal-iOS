@@ -16,10 +16,12 @@
 #import "TSInteraction.h"
 #import "TSThread.h"
 #import <25519/Randomness.h>
+#import "TSAccountManager.h"
 #import <SAMKeychain/SAMKeychain.h>
 #import <SignalServiceKit/OWSBatchMessageProcessor.h>
 #import <SignalServiceKit/OWSMessageReceiver.h>
 #import <YapDatabase/YapDatabaseRelationship.h>
+#import <YapDatabase/YapDatabaseManager.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -227,6 +229,23 @@ void setDatabaseInitialized()
     return sharedManager;
 }
 
+- (int)getOrGenerateResortID
+{
+    int resortID = [[_keysDBReadConnection objectForKey:@"ResortID"
+                                           inCollection:TSStorageUserAccountCollection] unsignedIntValue];
+
+    if (resortID == 0) {
+        resortID = (uint32_t)arc4random_uniform(16380) + 1; //5687
+        DDLogWarn(@"%@ Generated a new registrationID: %u", self.tag, resortID);
+
+        [_keysDBReadConnection setObject:[NSNumber numberWithUnsignedInteger:resortID]
+                                  forKey:@"ResortID"
+                            inCollection:TSStorageUserAccountCollection];
+    }
+
+    return resortID;
+}
+
 - (NSString *)backupDatabasePath
 {
     return [[self backupDirectoryPath] stringByAppendingFormat:@"/Signal-%@.sqlite", self.accountName];
@@ -305,6 +324,7 @@ void setDatabaseInitialized()
                                            serializer:NULL
                                          deserializer:[[self class] logOnFailureDeserializer]
                                               options:keysDBOptions];
+    _keysDatabase.defaultObjectCacheEnabled = NO;
 
     if (!_keysDatabase) {
         return NO;
@@ -835,8 +855,6 @@ void setDatabaseInitialized()
     [TSAttachmentStream deleteAttachments];
 
     [self deleteDatabaseFile];
-
-    [TSAttachmentStream deleteAttachments];
 }
 
 #pragma mark - Logging
