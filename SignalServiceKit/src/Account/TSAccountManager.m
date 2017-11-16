@@ -36,6 +36,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 @property (nonatomic, nullable) NSString *phoneNumberAwaitingVerification;
 @property (nonatomic, nullable) NSString *cachedLocalNumber;
 
+// we use separate db which is not backed up but created for each new / logged in user for all chat service related keys and ids; we do want to register for chat with clean state; we do not store any of those.
 @property (nonatomic, strong) YapDatabaseConnection *keysDBConnection;
 @property (nonatomic, strong) YapDatabaseConnection *dbConnection;
 
