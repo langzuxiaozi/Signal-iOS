@@ -199,7 +199,9 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 
 + (uint32_t)getOrGenerateRegistrationId
 {
-    return [[self sharedInstance] getOrGenerateRegistrationId];
+    @synchronized (self) {
+        return [[self sharedInstance] getOrGenerateRegistrationId];
+    }
 }
 
 - (uint32_t)getOrGenerateRegistrationId
