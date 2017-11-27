@@ -290,6 +290,9 @@ void setDatabaseInitialized()
     // this can be deleting any existing database file (if we're recovering
     // from a corrupt keychain).
 
+    // We use YapDatabaseCorruptAction_Rename option for database files which will create new one in case of failure
+    // documentation: https://github.com/yapstudios/YapDatabase/blob/master/YapDatabase/YapDatabaseOptions.h#L44
+
     YapDatabaseOptions *options = [[YapDatabaseOptions alloc] init];
     options.corruptAction       = YapDatabaseCorruptAction_Rename;
 
