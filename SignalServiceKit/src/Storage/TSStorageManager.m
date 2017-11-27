@@ -293,7 +293,7 @@ void setDatabaseInitialized()
     // from a corrupt keychain).
 
     YapDatabaseOptions *options = [[YapDatabaseOptions alloc] init];
-    options.corruptAction       = YapDatabaseCorruptAction_Fail;
+    options.corruptAction       = YapDatabaseCorruptAction_Rename;
 
     __weak typeof (self)weakSelf = self;
     options.cipherKeyBlock = ^{
@@ -313,7 +313,7 @@ void setDatabaseInitialized()
     _dbReadWriteConnection = self.newDatabaseConnection;
 
     YapDatabaseOptions *keysDBOptions = [[YapDatabaseOptions alloc] init];
-    keysDBOptions.corruptAction       = YapDatabaseCorruptAction_Fail;
+    keysDBOptions.corruptAction       = YapDatabaseCorruptAction_Rename;
 
     keysDBOptions.cipherKeyBlock = ^{
         typeof(self)strongSelf = weakSelf;
