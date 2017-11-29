@@ -453,7 +453,7 @@ const NSUInteger kNewGroupViewControllerAvatarWidth = 68;
     
     [OWSProfileManager.sharedManager addThreadToProfileWhitelist:thread];
 
-    void (^successHandler)() = ^{
+    void (^successHandler)(void) = ^{
         DDLogError(@"Group creation successful.");
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -493,7 +493,6 @@ const NSUInteger kNewGroupViewControllerAvatarWidth = 68;
                                                               inThread:thread
                                                       groupMetaMessage:TSGroupMessageNew];
 
-                      // This will save the message.
                       [message updateWithCustomMessage:NSLocalizedString(@"GROUP_CREATED", nil)];
 
                       dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -501,14 +500,14 @@ const NSUInteger kNewGroupViewControllerAvatarWidth = 68;
                               NSData *data = UIImagePNGRepresentation(model.groupImage);
                               DataSource *_Nullable dataSource =
                                   [DataSourceValue dataSourceWithData:data fileExtension:@"png"];
-                              [self.messageSender sendAttachmentData:dataSource
-                                                         contentType:OWSMimeTypeImagePng
-                                                      sourceFilename:nil
-                                                           inMessage:message
-                                                             success:successHandler
-                                                             failure:failureHandler];
+                              [self.messageSender enqueueAttachment:dataSource
+                                                        contentType:OWSMimeTypeImagePng
+                                                     sourceFilename:nil
+                                                          inMessage:message
+                                                            success:successHandler
+                                                            failure:failureHandler];
                           } else {
-                              [self.messageSender sendMessage:message success:successHandler failure:failureHandler];
+                              [self.messageSender enqueueMessage:message success:successHandler failure:failureHandler];
                           }
                       });
                   }];
@@ -592,7 +591,7 @@ const NSUInteger kNewGroupViewControllerAvatarWidth = 68;
 
 #pragma mark - OWSTableViewControllerDelegate
 
-- (void)tableViewDidScroll
+- (void)tableViewWillBeginDragging
 {
     [self.groupNameTextField resignFirstResponder];
 }

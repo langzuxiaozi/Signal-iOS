@@ -129,6 +129,10 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidBecomeActive:)
+                                                 name:UIApplicationDidBecomeActiveNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(yapDatabaseModified:)
                                                  name:YapDatabaseModifiedNotification
                                                object:nil];
@@ -354,7 +358,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
     [self.contactsManager requestSystemContactsOnceWithCompletion:^(NSError *_Nullable error) {
         if (error) {
-            DDLogError(@"%@ Error when requesting contacts: %@", self.tag, error);
+            DDLogError(@"%@ Error when requesting contacts: %@", self.logTag, error);
         }
         // Even if there is an error fetching contacts we proceed to the next screen.
         // As the compose view will present the proper thing depending on contact access.
@@ -490,6 +494,19 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     self.isAppInBackground = YES;
 }
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    // It's possible a thread was created while we where in the background. But since we don't honor contact
+    // requests unless the app is in the foregrond, we must check again here upon becoming active.
+    if ([TSThread numberOfKeysInCollection] > 0) {
+        [self.contactsManager requestSystemContactsOnceWithCompletion:^(NSError *_Nullable error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self updateReminderViews];
+            });
+        }];
+    }
+}
+
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
@@ -550,7 +567,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
 - (BOOL)shouldShowMissingContactsPermissionView
 {
-    if ([TSContactThread numberOfKeysInCollection] == 0) {
+    if (!self.contactsManager.systemContactsHaveBeenRequestedAtLeastOnce) {
         return NO;
     }
 
@@ -605,9 +622,9 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 - (void)pullToRefreshPerformed:(UIRefreshControl *)refreshControl
 {
     OWSAssert([NSThread isMainThread]);
-    DDLogInfo(@"%@ beggining refreshing.", self.tag);
+    DDLogInfo(@"%@ beggining refreshing.", self.logTag);
     [[Environment getCurrent].messageFetcherJob run].always(^{
-        DDLogInfo(@"%@ ending refreshing.", self.tag);
+        DDLogInfo(@"%@ ending refreshing.", self.logTag);
         [refreshControl endRefreshing];
     });
 }
@@ -679,7 +696,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
             TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
                                                                              inThread:thread
                                                                      groupMetaMessage:TSGroupMessageQuit];
-            [self.messageSender sendMessage:message
+            [self.messageSender enqueueMessage:message
                 success:^{
                     [self dismissViewControllerAnimated:YES
                                              completion:^{
@@ -799,7 +816,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                         animateDismissal:animateDismissal];
 }
 
-- (void)presentViewControllerWithBlock:(void (^)())presentationBlock animateDismissal:(BOOL)animateDismissal
+- (void)presentViewControllerWithBlock:(void (^)(void))presentationBlock animateDismissal:(BOOL)animateDismissal
 {
     OWSAssert([NSThread isMainThread]);
     OWSAssert(presentationBlock);
@@ -811,7 +828,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     // Third present the new view controller using presentationBlock.
 
     // Define a block to perform the second step.
-    void (^dismissNavigationBlock)() = ^{
+    void (^dismissNavigationBlock)(void) = ^{
         if (self.navigationController.viewControllers.lastObject != self) {
             [CATransaction begin];
             [CATransaction setCompletionBlock:^{
@@ -1053,18 +1070,6 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                             value:[UIColor ows_darkGrayColor]
                             range:NSMakeRange(firstLine.length + 1, secondLine.length)];
     _emptyBoxLabel.attributedText = fullLabelString;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

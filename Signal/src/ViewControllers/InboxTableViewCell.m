@@ -279,8 +279,9 @@ const NSUInteger kAvatarViewDiameter = 52;
 
 - (void)prepareForReuse
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [super prepareForReuse];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark - Name
@@ -338,18 +339,6 @@ const NSUInteger kAvatarViewDiameter = 52;
     }
     
     self.nameLabel.attributedText = name;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)logTag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)logTag
-{
-    return self.class.logTag;
 }
 
 @end

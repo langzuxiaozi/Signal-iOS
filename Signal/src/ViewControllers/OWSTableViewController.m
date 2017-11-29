@@ -390,8 +390,17 @@ NSString * const kOWSTableCellIdentifier = @"kOWSTableCellIdentifier";
     self.tableView.delegate = self;
     self.tableView.dataSource = self;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    // Fix a bug that only affects iOS 11.0.x and 11.1.x.
+    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(11, 0) && !SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(11, 2)) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpartial-availability"
+        self.tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+#pragma clang diagnostic pop
+    }
     [self.view addSubview:self.tableView];
-    [self.tableView autoPinToSuperviewEdges];
+    [self.tableView autoPinWidthToSuperview];
+    [self.tableView autoPinToTopLayoutGuideOfViewController:self withInset:0];
+    [self.tableView autoPinToBottomLayoutGuideOfViewController:self withInset:0];
 
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:kOWSTableCellIdentifier];
 }
@@ -584,18 +593,6 @@ NSString * const kOWSTableCellIdentifier = @"kOWSTableCellIdentifier";
     }
 }
 
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
-
 #pragma mark - Presentation
 
 - (void)presentFromViewController:(UIViewController *)fromViewController
@@ -619,9 +616,9 @@ NSString * const kOWSTableCellIdentifier = @"kOWSTableCellIdentifier";
 
 #pragma mark - UIScrollViewDelegate
 
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
-    [self.delegate tableViewDidScroll];
+    [self.delegate tableViewWillBeginDragging];
 }
 
 @end

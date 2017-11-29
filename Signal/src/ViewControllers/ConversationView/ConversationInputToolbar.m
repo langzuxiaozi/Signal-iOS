@@ -72,7 +72,14 @@ static void *kConversationInputTextViewObservingContext = &kConversationInputTex
 {
     self.layoutMargins = UIEdgeInsetsZero;
 
-    self.backgroundColor = [UIColor colorWithWhite:249 / 255.f alpha:1.f];
+    self.backgroundColor = [UIColor ows_inputToolbarBackgroundColor];
+
+    UIView *borderView = [UIView new];
+    borderView.backgroundColor = [UIColor colorWithWhite:238 / 255.f alpha:1.f];
+    [self addSubview:borderView];
+    [borderView autoPinWidthToSuperview];
+    [borderView autoPinEdgeToSuperviewEdge:ALEdgeTop];
+    [borderView autoSetDimension:ALDimensionHeight toSize:0.5f];
 
     _contentView = [UIView containerView];
     [self addSubview:self.contentView];
@@ -106,6 +113,7 @@ static void *kConversationInputTextViewObservingContext = &kConversationInputTex
                               action:@selector(attachmentButtonPressed)
                     forControlEvents:UIControlEventTouchUpInside];
     [self.attachmentButton setImage:[UIImage imageNamed:@"btnAttachments--blue"] forState:UIControlStateNormal];
+    self.attachmentButton.contentEdgeInsets = UIEdgeInsetsMake(0, 3, 0, 3);
     [self.leftButtonWrapper addSubview:self.attachmentButton];
 
     // TODO: Fix layout in this class.
@@ -803,23 +811,13 @@ static void *kConversationInputTextViewObservingContext = &kConversationInputTex
 - (void)viewWillDisappear:(BOOL)animated
 {
     [self.attachmentView viewWillDisappear:animated];
+
+    [self endEditingTextMessage];
 }
 
 - (nullable NSString *)textInputPrimaryLanguage
 {
     return self.inputTextView.textInputMode.primaryLanguage;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)logTag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)logTag
-{
-    return self.class.logTag;
 }
 
 @end

@@ -18,6 +18,7 @@
 #import <SignalServiceKit/OWSVerificationStateChangeMessage.h>
 #import <SignalServiceKit/SecurityUtils.h>
 #import <SignalServiceKit/TSCall.h>
+#import <SignalServiceKit/TSDatabaseView.h>
 #import <SignalServiceKit/TSIncomingMessage.h>
 #import <SignalServiceKit/TSInvalidIdentityKeyReceivingErrorMessage.h>
 #import <SignalServiceKit/TSStorageManager+SessionStore.h>
@@ -26,18 +27,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @implementation DebugUIMessages
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
 
 #pragma mark - Factory Methods
 
@@ -51,6 +40,14 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert(thread);
 
     NSMutableArray<OWSTableItem *> *items = [@[
+        [OWSTableItem itemWithTitle:@"Perform 100 random actions"
+                        actionBlock:^{
+                            [DebugUIMessages performRandomActions:100 thread:thread];
+                        }],
+        [OWSTableItem itemWithTitle:@"Perform 1,000 random actions"
+                        actionBlock:^{
+                            [DebugUIMessages performRandomActions:1000 thread:thread];
+                        }],
         [OWSTableItem itemWithTitle:@"Send 10 messages (1/sec.)"
                         actionBlock:^{
                             [DebugUIMessages sendTextMessages:10 thread:thread];
@@ -227,16 +224,17 @@ NS_ASSUME_NONNULL_BEGIN
         [OWSTableItem
             itemWithTitle:@"Request Bogus group info"
               actionBlock:^{
-                  DDLogInfo(@"%@ Requesting bogus group info for thread: %@", self.tag, thread);
+                  DDLogInfo(@"%@ Requesting bogus group info for thread: %@", self.logTag, thread);
                   OWSSyncGroupsRequestMessage *syncGroupsRequestMessage =
                       [[OWSSyncGroupsRequestMessage alloc] initWithThread:thread
                                                                   groupId:[Randomness generateRandomBytes:16]];
-                  [[Environment getCurrent].messageSender sendMessage:syncGroupsRequestMessage
+                  [[Environment getCurrent].messageSender enqueueMessage:syncGroupsRequestMessage
                       success:^{
-                          DDLogWarn(@"%@ Successfully sent Request Group Info message.", self.tag);
+                          DDLogWarn(@"%@ Successfully sent Request Group Info message.", self.logTag);
                       }
                       failure:^(NSError *error) {
-                          DDLogError(@"%@ Failed to send Request Group Info message with error: %@", self.tag, error);
+                          DDLogError(
+                              @"%@ Failed to send Request Group Info message with error: %@", self.logTag, error);
                       }];
               }],
         [OWSTableItem itemWithTitle:@"Inject 10 fake incoming messages"
@@ -273,10 +271,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)sendTextMessageInThread:(TSThread *)thread counter:(int)counter
 {
+    DDLogInfo(@"%@ sendTextMessageInThread: %d", self.logTag, counter);
+    [DDLog flushLog];
+
     NSString *randomText = [self randomText];
     NSString *text = [[[@(counter) description] stringByAppendingString:@" "] stringByAppendingString:randomText];
     OWSMessageSender *messageSender = [Environment getCurrent].messageSender;
-    [ThreadUtil sendMessageWithText:text inThread:thread messageSender:messageSender];
+    TSOutgoingMessage *message = [ThreadUtil sendMessageWithText:text inThread:thread messageSender:messageSender];
+    DDLogError(@"%@ sendTextMessageInThread timestamp: %llu.", self.logTag, message.timestamp);
 }
 
 + (void)sendTextMessages:(int)counter thread:(TSThread *)thread
@@ -312,7 +314,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)ensureRandomFileWithURL:(NSString *)url
                        filename:(NSString *)filename
                         success:(nullable void (^)(NSString *filePath))success
-                        failure:(nullable void (^)())failure
+                        failure:(nullable void (^)(void))failure
 {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSURL *documentDirectoryURL =
@@ -361,8 +363,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)sendAttachment:(NSString *)filePath
                 thread:(TSThread *)thread
-               success:(nullable void (^)())success
-               failure:(nullable void (^)())failure
+               success:(nullable void (^)(void))success
+               failure:(nullable void (^)(void))failure
 {
     OWSAssert(filePath);
     OWSAssert(thread);
@@ -383,7 +385,8 @@ NS_ASSUME_NONNULL_BEGIN
     success();
 }
 
-+ (void)ensureRandomGifWithSuccess:(nullable void (^)(NSString *filePath))success failure:(nullable void (^)())failure
++ (void)ensureRandomGifWithSuccess:(nullable void (^)(NSString *filePath))success
+                           failure:(nullable void (^)(void))failure
 {
     [self ensureRandomFileWithURL:@"https://s3.amazonaws.com/ows-data/example_attachment_media/random-gif.gif"
                          filename:@"random-gif.gif"
@@ -392,8 +395,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (void)sendRandomGifInThread:(TSThread *)thread
-                      success:(nullable void (^)())success
-                      failure:(nullable void (^)())failure
+                      success:(nullable void (^)(void))success
+                      failure:(nullable void (^)(void))failure
 {
     [self ensureRandomGifWithSuccess:^(NSString *filePath) {
         [self sendAttachment:filePath thread:thread success:success failure:failure];
@@ -424,7 +427,8 @@ NS_ASSUME_NONNULL_BEGIN
                              }];
 }
 
-+ (void)ensureRandomJpegWithSuccess:(nullable void (^)(NSString *filePath))success failure:(nullable void (^)())failure
++ (void)ensureRandomJpegWithSuccess:(nullable void (^)(NSString *filePath))success
+                            failure:(nullable void (^)(void))failure
 {
     [self ensureRandomFileWithURL:@"https://s3.amazonaws.com/ows-data/example_attachment_media/random-jpg.JPG"
                          filename:@"random-jpg.jpg"
@@ -433,8 +437,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (void)sendRandomJpegInThread:(TSThread *)thread
-                       success:(nullable void (^)())success
-                       failure:(nullable void (^)())failure
+                       success:(nullable void (^)(void))success
+                       failure:(nullable void (^)(void))failure
 {
     [self ensureRandomJpegWithSuccess:^(NSString *filePath) {
         [self sendAttachment:filePath thread:thread success:success failure:failure];
@@ -465,7 +469,8 @@ NS_ASSUME_NONNULL_BEGIN
                               }];
 }
 
-+ (void)ensureRandomMp3WithSuccess:(nullable void (^)(NSString *filePath))success failure:(nullable void (^)())failure
++ (void)ensureRandomMp3WithSuccess:(nullable void (^)(NSString *filePath))success
+                           failure:(nullable void (^)(void))failure
 {
     [self ensureRandomFileWithURL:@"https://s3.amazonaws.com/ows-data/example_attachment_media/random-mp3.mp3"
                          filename:@"random-mp3.mp3"
@@ -474,8 +479,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (void)sendRandomMp3InThread:(TSThread *)thread
-                      success:(nullable void (^)())success
-                      failure:(nullable void (^)())failure
+                      success:(nullable void (^)(void))success
+                      failure:(nullable void (^)(void))failure
 {
     [self ensureRandomMp3WithSuccess:^(NSString *filePath) {
         [self sendAttachment:filePath thread:thread success:success failure:failure];
@@ -506,7 +511,8 @@ NS_ASSUME_NONNULL_BEGIN
                              }];
 }
 
-+ (void)ensureRandomMp4WithSuccess:(nullable void (^)(NSString *filePath))success failure:(nullable void (^)())failure
++ (void)ensureRandomMp4WithSuccess:(nullable void (^)(NSString *filePath))success
+                           failure:(nullable void (^)(void))failure
 {
     [self ensureRandomFileWithURL:@"https://s3.amazonaws.com/ows-data/example_attachment_media/random-mp4.mp4"
                          filename:@"random-mp4.mp4"
@@ -515,8 +521,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (void)sendRandomMp4InThread:(TSThread *)thread
-                      success:(nullable void (^)())success
-                      failure:(nullable void (^)())failure
+                      success:(nullable void (^)(void))success
+                      failure:(nullable void (^)(void))failure
 {
     [self ensureRandomMp4WithSuccess:^(NSString *filePath) {
         [self sendAttachment:filePath thread:thread success:success failure:failure];
@@ -551,7 +557,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     OWSAssert(count > 0);
 
-    void (^success)() = ^{
+    void (^success)(void) = ^{
         if (count <= 1) {
             return;
         }
@@ -937,83 +943,96 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)sendFakeMessages:(NSUInteger)counter thread:(TSThread *)thread
 {
-    [TSStorageManager.sharedManager.dbReadWriteConnection readWriteWithBlock:^(
-        YapDatabaseReadWriteTransaction *transaction) {
-        for (NSUInteger i = 0; i < counter; i++) {
-            NSString *randomText = [self randomText];
-            switch (arc4random_uniform(4)) {
-                case 0: {
-                    TSIncomingMessage *message =
-                        [[TSIncomingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
-                                                            inThread:thread
-                                                            authorId:@"+19174054215"
-                                                      sourceDeviceId:0
-                                                         messageBody:randomText];
-                    [message markAsReadWithTransaction:transaction sendReadReceipt:NO updateExpiration:NO];
-                    break;
-                }
-                case 1: {
-                    TSOutgoingMessage *message =
-                        [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
-                                                            inThread:thread
-                                                         messageBody:randomText];
-                    [message saveWithTransaction:transaction];
-                    break;
-                }
-                case 2: {
-                    UInt32 filesize = 64;
-                    TSAttachmentPointer *pointer =
-                        [[TSAttachmentPointer alloc] initWithServerId:237391539706350548
-                                                                  key:[self createRandomNSDataOfSize:filesize]
-                                                               digest:nil
-                                                            byteCount:filesize
-                                                          contentType:@"audio/mp3"
-                                                                relay:@""
-                                                       sourceFilename:@"test.mp3"
-                                                       attachmentType:TSAttachmentTypeDefault];
-                    [pointer saveWithTransaction:transaction];
-                    TSIncomingMessage *message =
-                        [[TSIncomingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
-                                                            inThread:thread
-                                                            authorId:@"+19174054215"
-                                                      sourceDeviceId:0
-                                                         messageBody:nil
-                                                       attachmentIds:@[
-                                                           pointer.uniqueId,
-                                                       ]
-                                                    expiresInSeconds:0];
-                    [message markAsReadWithTransaction:transaction sendReadReceipt:NO updateExpiration:NO];
-                    break;
-                }
-                case 3: {
-                    TSOutgoingMessage *message =
-                        [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
-                                                            inThread:thread
-                                                      isVoiceMessage:NO
-                                                    expiresInSeconds:0];
+    [TSStorageManager.sharedManager.dbReadWriteConnection
+        readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+            [self sendFakeMessages:counter thread:thread transaction:transaction];
+        }];
+}
 
-                    NSString *filename = @"test.mp3";
-                    UInt32 filesize = 16;
++ (void)sendFakeMessages:(NSUInteger)counter
+                  thread:(TSThread *)thread
+             transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    DDLogInfo(@"%@ sendFakeMessages: %zd", self.logTag, counter);
 
-                    TSAttachmentStream *attachmentStream = [[TSAttachmentStream alloc] initWithContentType:@"audio/mp3"
-                                                                                                 byteCount:filesize
-                                                                                            sourceFilename:filename];
+    for (NSUInteger i = 0; i < counter; i++) {
+        NSString *randomText = [self randomText];
+        switch (arc4random_uniform(4)) {
+            case 0: {
+                TSIncomingMessage *message =
+                    [[TSIncomingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                                        inThread:thread
+                                                        authorId:@"+19174054215"
+                                                  sourceDeviceId:0
+                                                     messageBody:randomText];
+                DDLogError(@"%@ sendFakeMessages incoming timestamp: %llu.", self.logTag, message.timestamp);
+                [message markAsReadWithTransaction:transaction sendReadReceipt:NO updateExpiration:NO];
+                break;
+            }
+            case 1: {
+                TSOutgoingMessage *message =
+                    [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                                        inThread:thread
+                                                     messageBody:randomText];
+                DDLogError(@"%@ sendFakeMessages outgoing timestamp: %llu.", self.logTag, message.timestamp);
+                [message saveWithTransaction:transaction];
+                break;
+            }
+            case 2: {
+                UInt32 filesize = 64;
+                TSAttachmentPointer *pointer =
+                    [[TSAttachmentPointer alloc] initWithServerId:237391539706350548
+                                                              key:[self createRandomNSDataOfSize:filesize]
+                                                           digest:nil
+                                                        byteCount:filesize
+                                                      contentType:@"audio/mp3"
+                                                            relay:@""
+                                                   sourceFilename:@"test.mp3"
+                                                   attachmentType:TSAttachmentTypeDefault];
+                [pointer saveWithTransaction:transaction];
+                TSIncomingMessage *message =
+                    [[TSIncomingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                                        inThread:thread
+                                                        authorId:@"+19174054215"
+                                                  sourceDeviceId:0
+                                                     messageBody:nil
+                                                   attachmentIds:@[
+                                                       pointer.uniqueId,
+                                                   ]
+                                                expiresInSeconds:0];
+                DDLogError(@"%@ sendFakeMessages incoming attachment timestamp: %llu.", self.logTag, message.timestamp);
+                [message markAsReadWithTransaction:transaction sendReadReceipt:NO updateExpiration:NO];
+                break;
+            }
+            case 3: {
+                TSOutgoingMessage *message =
+                    [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                                        inThread:thread
+                                                  isVoiceMessage:NO
+                                                expiresInSeconds:0];
+                DDLogError(@"%@ sendFakeMessages outgoing attachment timestamp: %llu.", self.logTag, message.timestamp);
 
-                    NSError *error;
-                    BOOL success = [attachmentStream writeData:[self createRandomNSDataOfSize:filesize] error:&error];
-                    OWSAssert(success && !error);
+                NSString *filename = @"test.mp3";
+                UInt32 filesize = 16;
 
-                    [attachmentStream saveWithTransaction:transaction];
-                    [message.attachmentIds addObject:attachmentStream.uniqueId];
-                    if (filename) {
-                        message.attachmentFilenameMap[attachmentStream.uniqueId] = filename;
-                    }
-                    [message saveWithTransaction:transaction];
-                    break;
+                TSAttachmentStream *attachmentStream = [[TSAttachmentStream alloc] initWithContentType:@"audio/mp3"
+                                                                                             byteCount:filesize
+                                                                                        sourceFilename:filename];
+
+                NSError *error;
+                BOOL success = [attachmentStream writeData:[self createRandomNSDataOfSize:filesize] error:&error];
+                OWSAssert(success && !error);
+
+                [attachmentStream saveWithTransaction:transaction];
+                [message.attachmentIds addObject:attachmentStream.uniqueId];
+                if (filename) {
+                    message.attachmentFilenameMap[attachmentStream.uniqueId] = filename;
                 }
+                [message saveWithTransaction:transaction];
+                break;
             }
         }
-    }];
+    }
 }
 
 + (void)sendTinyAttachments:(int)counter thread:(TSThread *)thread
@@ -1062,11 +1081,10 @@ NS_ASSUME_NONNULL_BEGIN
     TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
                                                                      inThread:thread
                                                              groupMetaMessage:TSGroupMessageNew];
-    // This will save the message.
     [message updateWithCustomMessage:NSLocalizedString(@"GROUP_CREATED", nil)];
 
     OWSMessageSender *messageSender = [Environment getCurrent].messageSender;
-    void (^completion)() = ^{
+    void (^completion)(void) = ^{
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)1.f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [ThreadUtil sendMessageWithText:[@(counter) description] inThread:thread messageSender:messageSender];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)1.f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
@@ -1074,7 +1092,11 @@ NS_ASSUME_NONNULL_BEGIN
             });
         });
     };
-    [messageSender sendMessage:message success:completion failure:completion];
+    [messageSender enqueueMessage:message
+                          success:completion
+                          failure:^(NSError *error) {
+                              completion();
+                          }];
 }
 
 + (void)injectFakeIncomingMessages:(int)counter thread:(TSThread *)thread
@@ -1093,6 +1115,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)injectIncomingMessageInThread:(TSThread *)thread counter:(int)counter
 {
     OWSAssert(thread);
+
+    DDLogInfo(@"%@ injectIncomingMessageInThread: %d", self.logTag, counter);
 
     NSString *randomText = [self randomText];
     NSString *text = [[[@(counter) description] stringByAppendingString:@" "] stringByAppendingString:randomText];
@@ -1132,6 +1156,279 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert(envelopeData);
 
     [[OWSBatchMessageProcessor sharedInstance] enqueueEnvelopeData:envelopeData plaintextData:plaintextData];
+}
+
++ (void)performRandomActions:(int)counter thread:(TSThread *)thread
+{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.f * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(),
+                   ^{
+                       [self performRandomActionInThread:thread counter:counter];
+                       if (counter > 0) {
+                           [self performRandomActions:counter - 1 thread:thread];
+                       }
+                   });
+}
+
++ (void)performRandomActionInThread:(TSThread *)thread
+                            counter:(int)counter
+{
+    typedef void (^ActionBlock)(YapDatabaseReadWriteTransaction *transaction);
+    NSArray<ActionBlock> *actionBlocks = @[
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            // injectIncomingMessageInThread doesn't take a transaction.
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self injectIncomingMessageInThread:thread counter:counter];
+            });
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            // sendTextMessageInThread doesn't take a transaction.
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self sendTextMessageInThread:thread counter:counter];
+            });
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self sendFakeMessages:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self deleteRandomMessages:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self deleteLastMessages:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self deleteRandomRecentMessages:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self insertAndDeleteNewOutgoingMessages:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self resurrectNewOutgoingMessages1:messageCount thread:thread transaction:transaction];
+        },
+        ^(YapDatabaseReadWriteTransaction *transaction) {
+            NSUInteger messageCount = (NSUInteger)(1 + arc4random_uniform(4));
+            [self resurrectNewOutgoingMessages2:messageCount thread:thread transaction:transaction];
+        },
+    ];
+    [TSStorageManager.sharedManager.dbReadWriteConnection
+        readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+            int actionCount = 1 + (int)arc4random_uniform(3);
+            for (int actionIdx = 0; actionIdx < actionCount; actionIdx++) {
+                ActionBlock actionBlock = actionBlocks[(NSUInteger)arc4random_uniform((uint32_t)actionBlocks.count)];
+                actionBlock(transaction);
+            }
+        }];
+}
+
++ (void)deleteRandomMessages:(NSUInteger)count
+                      thread:(TSThread *)thread
+                 transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    DDLogInfo(@"%@ deleteRandomMessages: %zd", self.logTag, count);
+
+    YapDatabaseViewTransaction *interactionsByThread = [transaction ext:TSMessageDatabaseViewExtensionName];
+    NSUInteger messageCount = [interactionsByThread numberOfItemsInGroup:thread.uniqueId];
+
+    NSMutableArray<NSNumber *> *messageIndices = [NSMutableArray new];
+    for (NSUInteger messageIdx = 0; messageIdx < messageCount; messageIdx++) {
+        [messageIndices addObject:@(messageIdx)];
+    }
+    NSMutableArray<TSInteraction *> *interactions = [NSMutableArray new];
+    for (NSUInteger i = 0; i < count && messageIndices.count > 0; i++) {
+        NSUInteger idx = (NSUInteger)arc4random_uniform((uint32_t)messageIndices.count);
+        NSNumber *messageIdx = messageIndices[idx];
+        [messageIndices removeObjectAtIndex:idx];
+
+        TSInteraction *_Nullable interaction =
+            [interactionsByThread objectAtIndex:messageIdx.unsignedIntegerValue inGroup:thread.uniqueId];
+        OWSAssert(interaction);
+        [interactions addObject:interaction];
+    }
+
+    for (TSInteraction *interaction in interactions) {
+        [interaction removeWithTransaction:transaction];
+    }
+}
+
++ (void)deleteLastMessages:(NSUInteger)count
+                    thread:(TSThread *)thread
+               transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    DDLogInfo(@"%@ deleteLastMessages", self.logTag);
+
+    YapDatabaseViewTransaction *interactionsByThread = [transaction ext:TSMessageDatabaseViewExtensionName];
+    NSUInteger messageCount = (NSUInteger)[interactionsByThread numberOfItemsInGroup:thread.uniqueId];
+
+    NSMutableArray<NSNumber *> *messageIndices = [NSMutableArray new];
+    for (NSUInteger i = 0; i < count && i < messageCount; i++) {
+        NSUInteger messageIdx = messageCount - (1 + i);
+        [messageIndices addObject:@(messageIdx)];
+    }
+    NSMutableArray<TSInteraction *> *interactions = [NSMutableArray new];
+    for (NSNumber *messageIdx in messageIndices) {
+        TSInteraction *_Nullable interaction =
+            [interactionsByThread objectAtIndex:messageIdx.unsignedIntegerValue inGroup:thread.uniqueId];
+        OWSAssert(interaction);
+        [interactions addObject:interaction];
+    }
+    for (TSInteraction *interaction in interactions) {
+        [interaction removeWithTransaction:transaction];
+    }
+}
+
++ (void)deleteRandomRecentMessages:(NSUInteger)count
+                            thread:(TSThread *)thread
+                       transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    DDLogInfo(@"%@ deleteRandomRecentMessages: %zd", self.logTag, count);
+
+    YapDatabaseViewTransaction *interactionsByThread = [transaction ext:TSMessageDatabaseViewExtensionName];
+    NSInteger messageCount = (NSInteger)[interactionsByThread numberOfItemsInGroup:thread.uniqueId];
+
+    NSMutableArray<NSNumber *> *messageIndices = [NSMutableArray new];
+    const NSInteger kRecentMessageCount = 10;
+    for (NSInteger i = 0; i < kRecentMessageCount; i++) {
+        NSInteger messageIdx = messageCount - (1 + i);
+        if (messageIdx >= 0) {
+            [messageIndices addObject:@(messageIdx)];
+        }
+    }
+    NSMutableArray<TSInteraction *> *interactions = [NSMutableArray new];
+    for (NSUInteger i = 0; i < count && messageIndices.count > 0; i++) {
+        NSUInteger idx = (NSUInteger)arc4random_uniform((uint32_t)messageIndices.count);
+        NSNumber *messageIdx = messageIndices[idx];
+        [messageIndices removeObjectAtIndex:idx];
+
+        TSInteraction *_Nullable interaction =
+            [interactionsByThread objectAtIndex:messageIdx.unsignedIntegerValue inGroup:thread.uniqueId];
+        OWSAssert(interaction);
+        [interactions addObject:interaction];
+    }
+    for (TSInteraction *interaction in interactions) {
+        [interaction removeWithTransaction:transaction];
+    }
+}
+
++ (void)insertAndDeleteNewOutgoingMessages:(NSUInteger)count
+                                    thread:(TSThread *)thread
+                               transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    DDLogInfo(@"%@ insertAndDeleteNewOutgoingMessages: %zd", self.logTag, count);
+
+    NSMutableArray<TSOutgoingMessage *> *messages = [NSMutableArray new];
+    for (NSUInteger i =0; i < count; i++) {
+        NSString *text = [self randomText];
+        OWSDisappearingMessagesConfiguration *configuration =
+            [OWSDisappearingMessagesConfiguration fetchObjectWithUniqueID:thread.uniqueId transaction:transaction];
+        TSOutgoingMessage *message =
+        [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                            inThread:thread
+                                         messageBody:text
+                                       attachmentIds:[NSMutableArray new]
+                                    expiresInSeconds:(configuration.isEnabled ? configuration.durationSeconds : 0)];
+        DDLogError(@"%@ insertAndDeleteNewOutgoingMessages timestamp: %llu.", self.logTag, message.timestamp);
+        [messages addObject:message];
+    }
+
+    for (TSOutgoingMessage *message in messages) {
+        [message saveWithTransaction:transaction];
+    }
+    for (TSOutgoingMessage *message in messages) {
+        [message removeWithTransaction:transaction];
+    }
+}
+
++ (void)resurrectNewOutgoingMessages1:(NSUInteger)count
+                               thread:(TSThread *)thread
+                          transaction:(YapDatabaseReadWriteTransaction *)initialTransaction
+{
+    DDLogInfo(@"%@ resurrectNewOutgoingMessages1.1: %zd", self.logTag, count);
+
+    NSMutableArray<TSOutgoingMessage *> *messages = [NSMutableArray new];
+    for (NSUInteger i =0; i < count; i++) {
+        NSString *text = [self randomText];
+        OWSDisappearingMessagesConfiguration *configuration =
+            [OWSDisappearingMessagesConfiguration fetchObjectWithUniqueID:thread.uniqueId
+                                                              transaction:initialTransaction];
+        TSOutgoingMessage *message =
+        [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                            inThread:thread
+                                         messageBody:text
+                                       attachmentIds:[NSMutableArray new]
+                                    expiresInSeconds:(configuration.isEnabled ? configuration.durationSeconds : 0)];
+        DDLogError(@"%@ resurrectNewOutgoingMessages1 timestamp: %llu.", self.logTag, message.timestamp);
+        [messages addObject:message];
+    }
+
+    for (TSOutgoingMessage *message in messages) {
+        [message saveWithTransaction:initialTransaction];
+    }
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        DDLogInfo(@"%@ resurrectNewOutgoingMessages1.2: %zd", self.logTag, count);
+        [TSStorageManager.sharedManager.dbReadWriteConnection
+            readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                for (TSOutgoingMessage *message in messages) {
+                    [message removeWithTransaction:transaction];
+                }
+                for (TSOutgoingMessage *message in messages) {
+                    [message saveWithTransaction:transaction];
+                }
+            }];
+    });
+}
+
++ (void)resurrectNewOutgoingMessages2:(NSUInteger)count
+                               thread:(TSThread *)thread
+                          transaction:(YapDatabaseReadWriteTransaction *)initialTransaction
+{
+    DDLogInfo(@"%@ resurrectNewOutgoingMessages2.1: %zd", self.logTag, count);
+
+    NSMutableArray<TSOutgoingMessage *> *messages = [NSMutableArray new];
+    for (NSUInteger i =0; i < count; i++) {
+        NSString *text = [self randomText];
+        OWSDisappearingMessagesConfiguration *configuration =
+            [OWSDisappearingMessagesConfiguration fetchObjectWithUniqueID:thread.uniqueId
+                                                              transaction:initialTransaction];
+        TSOutgoingMessage *message =
+        [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
+                                            inThread:thread
+                                         messageBody:text
+                                       attachmentIds:[NSMutableArray new]
+                                    expiresInSeconds:(configuration.isEnabled ? configuration.durationSeconds : 0)];
+        DDLogError(@"%@ resurrectNewOutgoingMessages2 timestamp: %llu.", self.logTag, message.timestamp);
+        [messages addObject:message];
+    }
+
+    for (TSOutgoingMessage *message in messages) {
+        [message updateWithMessageState:TSOutgoingMessageStateAttemptingOut transaction:initialTransaction];
+        [message saveWithTransaction:initialTransaction];
+    }
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        DDLogInfo(@"%@ resurrectNewOutgoingMessages2.2: %zd", self.logTag, count);
+        [TSStorageManager.sharedManager.dbReadWriteConnection
+            readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                for (TSOutgoingMessage *message in messages) {
+                    [message removeWithTransaction:transaction];
+                }
+            }];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            DDLogInfo(@"%@ resurrectNewOutgoingMessages2.3: %zd", self.logTag, count);
+            [TSStorageManager.sharedManager.dbReadWriteConnection
+                readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                    for (TSOutgoingMessage *message in messages) {
+                        [message saveWithTransaction:transaction];
+                    }
+                }];
+        });
+    });
 }
 
 @end

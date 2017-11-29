@@ -39,6 +39,7 @@
 #import "UIImage+OWS.h"
 #import "UIUtil.h"
 #import "UIView+OWS.h"
+#import "UIViewController+Permissions.h"
 #import "ViewControllerUtils.h"
 #import <AxolotlKit/NSData+keyVersionByte.h>
 #import <Foundation/Foundation.h>
@@ -76,6 +77,7 @@
 #import <SignalServiceKit/OWSDispatch.h>
 #import <SignalServiceKit/OWSEndSessionMessage.h>
 #import <SignalServiceKit/OWSError.h>
+#import <SignalServiceKit/OWSFileSystem.h>
 #import <SignalServiceKit/OWSGetMessagesRequest.h>
 #import <SignalServiceKit/OWSGetProfileRequest.h>
 #import <SignalServiceKit/OWSIdentityManager.h>
@@ -108,6 +110,7 @@
 #import <SignalServiceKit/TSStorageManager+Calling.h>
 #import <SignalServiceKit/TSStorageManager+SessionStore.h>
 #import <SignalServiceKit/TSThread.h>
+#import <SignalServiceKit/Threading.h>
 #import <WebRTC/RTCAudioSession.h>
 #import <WebRTC/RTCCameraPreviewView.h>
 #import <YYImage/YYImage.h>

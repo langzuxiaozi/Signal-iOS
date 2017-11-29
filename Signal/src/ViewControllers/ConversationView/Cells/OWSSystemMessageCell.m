@@ -300,11 +300,6 @@ NS_ASSUME_NONNULL_BEGIN
     return result;
 }
 
-- (void)prepareForReuse
-{
-    [super prepareForReuse];
-}
-
 #pragma mark - UIMenuController
 
 - (void)showMenuController
@@ -370,18 +365,6 @@ NS_ASSUME_NONNULL_BEGIN
     if (longPress.state == UIGestureRecognizerStateBegan) {
         [self showMenuController];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)logTag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)logTag
-{
-    return self.class.logTag;
 }
 
 @end

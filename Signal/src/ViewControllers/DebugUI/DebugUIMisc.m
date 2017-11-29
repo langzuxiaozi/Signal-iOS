@@ -30,18 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation DebugUIMisc
 
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
-
 #pragma mark - Factory Methods
 
 - (NSString *)name
@@ -89,8 +77,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)reregister
 {
-    DDLogInfo(@"%@ re-registering.", self.tag);
+    DDLogInfo(@"%@ re-registering.", self.logTag);
     [[TSAccountManager sharedInstance] resetForRegistration];
+    [[Environment getCurrent].preferences unsetRecordedAPNSTokens];
 
     RegistrationViewController *viewController = [RegistrationViewController new];
     OWSNavigationController *navigationController =
@@ -109,7 +98,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     if (!countryMetadata) {
-        countryCode = [NSLocale.currentLocale objectForKey:NSLocaleCountryCode];
+        countryCode = [PhoneNumber defaultCountryCode];
         if (countryCode) {
             countryMetadata = [OWSCountryMetadata countryMetadataForCountryCode:countryCode];
         }

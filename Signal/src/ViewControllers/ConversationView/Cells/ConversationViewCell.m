@@ -30,16 +30,13 @@ NS_ASSUME_NONNULL_BEGIN
     return CGSizeZero;
 }
 
-#pragma mark - Logging
-
-+ (NSString *)logTag
+- (void)setIsCellVisible:(BOOL)isCellVisible
 {
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
+    _isCellVisible = isCellVisible;
 
-- (NSString *)logTag
-{
-    return self.class.logTag;
+    if (isCellVisible) {
+        [self layoutIfNeeded];
+    }
 }
 
 @end

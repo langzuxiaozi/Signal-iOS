@@ -224,8 +224,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     }
 
     if (!countryCode || !callingCode) {
-        NSLocale *locale = NSLocale.currentLocale;
-        countryCode = [locale objectForKey:NSLocaleCountryCode];
+        countryCode = [PhoneNumber defaultCountryCode];
         callingCode = [[PhoneNumberUtil sharedUtil].nbPhoneNumberUtil getCountryCodeForRegion:countryCode];
     }
 
@@ -573,7 +572,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
 #pragma mark - OWSTableViewControllerDelegate
 
-- (void)tableViewDidScroll
+- (void)tableViewWillBeginDragging
 {
     [self.phoneNumberTextField resignFirstResponder];
 }
@@ -588,18 +587,6 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 - (BOOL)shouldHideLocalNumber
 {
     return [self.delegate shouldHideLocalNumber];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

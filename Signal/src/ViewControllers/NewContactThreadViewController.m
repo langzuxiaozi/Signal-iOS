@@ -75,6 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     [super loadView];
 
+    self.view.backgroundColor = UIColor.whiteColor;
     _contactsViewHelper = [[ContactsViewHelper alloc] initWithDelegate:self];
     _nonContactAccountSet = [NSMutableSet set];
     _collation = [UILocalizedIndexedCollation currentCollation];
@@ -841,7 +842,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - OWSTableViewControllerDelegate
 
-- (void)tableViewDidScroll
+- (void)tableViewWillBeginDragging
 {
     [self.searchBar resignFirstResponder];
 }
@@ -1007,18 +1008,6 @@ NS_ASSUME_NONNULL_BEGIN
     if (didUpdate) {
         [self updateTableContents];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

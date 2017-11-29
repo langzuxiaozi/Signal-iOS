@@ -58,10 +58,10 @@ NS_ASSUME_NONNULL_BEGIN
         inThread:thread
         messageSender:messageSender
         success:^{
-            DDLogInfo(@"%@ Successfully sent message.", self.tag);
+            DDLogInfo(@"%@ Successfully sent message.", self.logTag);
         }
         failure:^(NSError *error) {
-            DDLogWarn(@"%@ Failed to deliver message with error: %@", self.tag, error);
+            DDLogWarn(@"%@ Failed to deliver message with error: %@", self.logTag, error);
         }];
 }
 
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (TSOutgoingMessage *)sendMessageWithText:(NSString *)text
                                   inThread:(TSThread *)thread
                              messageSender:(OWSMessageSender *)messageSender
-                                   success:(void (^)())successHandler
+                                   success:(void (^)(void))successHandler
                                    failure:(void (^)(NSError *error))failureHandler
 {
     OWSAssert([NSThread isMainThread]);
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
                                        attachmentIds:[NSMutableArray new]
                                     expiresInSeconds:(configuration.isEnabled ? configuration.durationSeconds : 0)];
 
-    [messageSender sendMessage:message success:successHandler failure:failureHandler];
+    [messageSender enqueueMessage:message success:successHandler failure:failureHandler];
 
     return message;
 }
@@ -117,15 +117,15 @@ NS_ASSUME_NONNULL_BEGIN
                                             inThread:thread
                                       isVoiceMessage:[attachment isVoiceMessage]
                                     expiresInSeconds:(configuration.isEnabled ? configuration.durationSeconds : 0)];
-    [messageSender sendAttachmentData:attachment.dataSource
+    [messageSender enqueueAttachment:attachment.dataSource
         contentType:attachment.mimeType
         sourceFilename:attachment.filenameOrDefault
         inMessage:message
         success:^{
-            DDLogDebug(@"%@ Successfully sent message attachment.", self.tag);
+            DDLogDebug(@"%@ Successfully sent message attachment.", self.logTag);
         }
         failure:^(NSError *error) {
-            DDLogError(@"%@ Failed to send message attachment with error: %@", self.tag, error);
+            DDLogError(@"%@ Failed to send message attachment with error: %@", self.logTag, error);
         }];
 
     return message;
@@ -235,7 +235,7 @@ NS_ASSUME_NONNULL_BEGIN
         if (firstUnseenInteractionTimestampParameter) {
             result.firstUnseenInteractionTimestamp = firstUnseenInteractionTimestampParameter;
         } else {
-            TSInteraction *firstUnseenInteraction =
+            TSInteraction *_Nullable firstUnseenInteraction =
                 [[TSDatabaseView unseenDatabaseViewExtension:transaction] firstObjectInGroup:thread.uniqueId];
             if (firstUnseenInteraction) {
                 result.firstUnseenInteractionTimestamp = @(firstUnseenInteraction.timestampForSorting);
@@ -316,9 +316,12 @@ NS_ASSUME_NONNULL_BEGIN
                               }
                           }];
 
-            OWSAssert(interactionAfterUnreadIndicator);
-
-            if (result.hasMoreUnseenMessages) {
+            if (!interactionAfterUnreadIndicator) {
+                // If we can't find an interaction after the unread indicator,
+                // remove it.  All unread messages may have been deleted or
+                // expired.
+                result.firstUnseenInteractionTimestamp = nil;
+            } else if (result.hasMoreUnseenMessages) {
                 NSMutableSet<NSData *> *missingUnseenSafetyNumberChanges = [NSMutableSet set];
                 for (TSInvalidIdentityKeyErrorMessage *safetyNumberChange in blockingSafetyNumberChanges) {
                     BOOL isUnseen = safetyNumberChange.timestampForSorting
@@ -455,7 +458,7 @@ NS_ASSUME_NONNULL_BEGIN
                 || existingContactOffers.hasAddToContactsOffer != shouldHaveAddToContactsOffer
                 || existingContactOffers.hasAddToProfileWhitelistOffer != shouldHaveAddToProfileWhitelistOffer) {
                 DDLogInfo(@"%@ Removing stale contact offers: %@ (%llu)",
-                    self.tag,
+                    self.logTag,
                     existingContactOffers.uniqueId,
                     existingContactOffers.timestampForSorting);
                 // Preserve the timestamp of the existing "contact offers" so that
@@ -468,7 +471,7 @@ NS_ASSUME_NONNULL_BEGIN
 
         if (existingContactOffers && !shouldHaveContactOffers) {
             DDLogInfo(@"%@ Removing contact offers: %@ (%llu)",
-                self.tag,
+                self.logTag,
                 existingContactOffers.uniqueId,
                 existingContactOffers.timestampForSorting);
             [existingContactOffers removeWithTransaction:transaction];
@@ -485,7 +488,7 @@ NS_ASSUME_NONNULL_BEGIN
             [offersMessage saveWithTransaction:transaction];
 
             DDLogInfo(@"%@ Creating contact offers: %@ (%llu)",
-                self.tag,
+                self.logTag,
                 offersMessage.uniqueId,
                 offersMessage.timestampForSorting);
         }
@@ -495,7 +498,7 @@ NS_ASSUME_NONNULL_BEGIN
         if (!shouldHaveUnreadIndicator) {
             if (existingUnreadIndicator) {
                 DDLogInfo(@"%@ Removing obsolete TSUnreadIndicatorInteraction: %@",
-                    self.tag,
+                    self.logTag,
                     existingUnreadIndicator.uniqueId);
                 [existingUnreadIndicator removeWithTransaction:transaction];
             }
@@ -512,7 +515,7 @@ NS_ASSUME_NONNULL_BEGIN
             } else {
                 if (existingUnreadIndicator) {
                     DDLogInfo(@"%@ Removing TSUnreadIndicatorInteraction due to changed timestamp: %@",
-                        self.tag,
+                        self.logTag,
                         existingUnreadIndicator.uniqueId);
                     [existingUnreadIndicator removeWithTransaction:transaction];
                 }
@@ -525,7 +528,7 @@ NS_ASSUME_NONNULL_BEGIN
                 [indicator saveWithTransaction:transaction];
 
                 DDLogInfo(@"%@ Creating TSUnreadIndicatorInteraction: %@ (%llu)",
-                    self.tag,
+                    self.logTag,
                     indicator.uniqueId,
                     indicator.timestampForSorting);
             }
@@ -580,18 +583,6 @@ NS_ASSUME_NONNULL_BEGIN
     } else {
         return NO;
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

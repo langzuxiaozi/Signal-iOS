@@ -40,9 +40,8 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
 
         providerConfiguration.supportedHandleTypes = [.phoneNumber, .generic]
 
-        if let iconMaskImage = UIImage(named: "IconMask") {
-            providerConfiguration.iconTemplateImageData = UIImagePNGRepresentation(iconMaskImage)
-        }
+        let iconMaskImage = #imageLiteral(resourceName: "logoSignal")
+        providerConfiguration.iconTemplateImageData = UIImagePNGRepresentation(iconMaskImage)
 
         providerConfiguration.ringtoneSound = "r.caf"
 
@@ -342,17 +341,14 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
 
         Logger.debug("\(TAG) Received \(#function)")
 
-        // Audio Session is managed by CallAudioService, which observes changes on the
-        // SignalCall directly.
+        CallAudioSession.shared.isRTCAudioEnabled = true
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         AssertIsOnMainThread()
 
         Logger.debug("\(TAG) Received \(#function)")
-
-        // Audio Session is managed by CallAudioService, which observes changes on the
-        // SignalCall directly.
+        CallAudioSession.shared.isRTCAudioEnabled = false
     }
 
     // MARK: - Util

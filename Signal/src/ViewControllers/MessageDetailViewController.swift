@@ -38,7 +38,7 @@ class MessageDetailViewController: OWSViewController, UIScrollViewDelegate {
     var messageTextProxyViewHeightConstraint: NSLayoutConstraint?
     var bubbleViewWidthConstraint: NSLayoutConstraint?
 
-    var scrollView: UIScrollView?
+    var scrollView: UIScrollView!
     var contentView: UIView?
 
     var attachment: TSAttachment?
@@ -96,11 +96,22 @@ class MessageDetailViewController: OWSViewController, UIScrollViewDelegate {
                 view.setNeedsLayout()
                 view.layoutIfNeeded()
 
+                let contentHeight = scrollView.contentSize.height
+                let scrollViewHeight = scrollView.frame.size.height
+                guard contentHeight >=  scrollViewHeight else {
+                    // All content is visible within the scroll view. No need to offset.
+                    return
+                }
+
+                // We want to include at least a little portion of the message, but scroll no farther than necessary.
                 let showAtLeast: CGFloat = 50
-                let middleCenter = CGPoint(x: bubbleView.frame.origin.x + bubbleView.frame.width / 2,
-                                           y: bubbleView.frame.origin.y + bubbleView.frame.height - showAtLeast)
-                let offset = bubbleView.superview!.convert(middleCenter, to: scrollView)
-                self.scrollView!.setContentOffset(offset, animated: false)
+                let bubbleViewBottom = bubbleView.superview!.convert(bubbleView.frame, to: scrollView).maxY
+                let maxOffset =  bubbleViewBottom - showAtLeast
+                let lastPage = contentHeight - scrollViewHeight
+
+                let offset = CGPoint(x: 0, y: min(maxOffset, lastPage))
+
+                scrollView.setContentOffset(offset, animated: false)
             }
         }
     }
@@ -342,7 +353,7 @@ class MessageDetailViewController: OWSViewController, UIScrollViewDelegate {
             messageTextView.textColor = isIncoming ? UIColor.black : UIColor.white
             messageTextView.text = messageBody
 
-            let bubbleImageData = isIncoming ? bubbleFactory.incoming : bubbleFactory.outgoing
+            let bubbleImageData = bubbleFactory.bubble(message: message)
 
             let messageTextProxyView = UIView()
             messageTextProxyView.layoutMargins = UIEdgeInsets.zero
@@ -551,7 +562,11 @@ class MessageDetailViewController: OWSViewController, UIScrollViewDelegate {
         AssertIsOnMainThread()
 
         self.databaseConnection.read { transaction in
-            guard let newMessage = TSInteraction.fetch(uniqueId: self.message.uniqueId, transaction: transaction) as? TSMessage else {
+            guard let uniqueId = self.message.uniqueId else {
+                Logger.error("\(self.TAG) Message is missing uniqueId.")
+                return
+            }
+            guard let newMessage = TSInteraction.fetch(uniqueId: uniqueId, transaction: transaction) as? TSMessage else {
                 Logger.error("\(self.TAG) Couldn't reload message.")
                 return
             }
@@ -564,7 +579,11 @@ class MessageDetailViewController: OWSViewController, UIScrollViewDelegate {
 
         let notifications = self.databaseConnection.beginLongLivedReadTransaction()
 
-        guard self.databaseConnection.hasChange(forKey: message.uniqueId,
+        guard let uniqueId = self.message.uniqueId else {
+            Logger.error("\(self.TAG) Message is missing uniqueId.")
+            return
+        }
+        guard self.databaseConnection.hasChange(forKey: uniqueId,
                                                  inCollection: TSInteraction.collection(),
                                                  in: notifications) else {
                                                     Logger.debug("\(TAG) No relevant changes.")

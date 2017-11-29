@@ -249,6 +249,8 @@ const CGFloat kContactTableViewCellAvatarTextMargin = 12;
 
 - (void)prepareForReuse
 {
+    [super prepareForReuse];
+
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     self.accessoryMessage = nil;
@@ -270,18 +272,6 @@ const CGFloat kContactTableViewCellAvatarTextMargin = 12;
         [self updateProfileName];
         [self updateAvatar];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)logTag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)logTag
-{
-    return self.class.logTag;
 }
 
 @end
