@@ -566,7 +566,7 @@ void setDatabaseInitialized()
 
     NSError *keyFetchError;
     NSString *dbPassword =
-    [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
+    [SAMKeychain passwordForService:self.accountName account:keychainDBPassAccount error:&keyFetchError];
 
     if (keyFetchError) {
         UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
