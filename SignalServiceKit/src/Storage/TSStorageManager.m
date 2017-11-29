@@ -223,7 +223,7 @@ void setDatabaseInitialized()
 
     if (resortID == 0) {
         resortID = (uint32_t)arc4random_uniform(16380) + 1; //5687
-        DDLogWarn(@"%@ Generated a new registrationID: %u", self.tag, resortID);
+        DDLogWarn(@"%@ Generated a new registrationID: %u", self.logTag, resortID);
 
         [_keysDBReadConnection setObject:[NSNumber numberWithUnsignedInteger:resortID]
                                   forKey:@"ResortID"
@@ -464,6 +464,11 @@ void setDatabaseInitialized()
 
 - (BOOL)dbExists {
     return [[NSFileManager defaultManager] fileExistsAtPath:[self dbPathWithName:databaseName]];
+}
+
+- (NSString *)dbPath
+{
+    return [self dbPathWithName:databaseName];
 }
 
 - (NSString *)dbPathWithName:(NSString *)name {
@@ -757,4 +762,3 @@ void setDatabaseInitialized()
 @end
 
 NS_ASSUME_NONNULL_END
-
