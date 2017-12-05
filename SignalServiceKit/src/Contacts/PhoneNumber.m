@@ -96,9 +96,9 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
 + (NSString *)bestEffortFormatPartialUserSpecifiedTextToLookLikeAPhoneNumber:(NSString *)input
                                               withSpecifiedCountryCodeString:(NSString *)countryCodeString {
     return [PhoneNumber
-        bestEffortFormatPartialUserSpecifiedTextToLookLikeAPhoneNumber:input
-                                               withSpecifiedRegionCode:
-                                                   [PhoneNumber regionCodeFromCountryCodeString:countryCodeString]];
+            bestEffortFormatPartialUserSpecifiedTextToLookLikeAPhoneNumber:input
+            withSpecifiedRegionCode:
+            [PhoneNumber regionCodeFromCountryCodeString:countryCodeString]];
 }
 
 + (NSString *)bestEffortFormatPartialUserSpecifiedTextToLookLikeAPhoneNumber:(NSString *)input
@@ -116,7 +116,7 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
 + (NSString *)regionCodeFromCountryCodeString:(NSString *)countryCodeString {
     NBPhoneNumberUtil *phoneUtil = [PhoneNumberUtil sharedUtil].nbPhoneNumberUtil;
     NSString *regionCode =
-        [phoneUtil getRegionCodeForCountryCode:@([[countryCodeString substringFromIndex:1] integerValue])];
+    [phoneUtil getRegionCodeForCountryCode:@([[countryCodeString substringFromIndex:1] integerValue])];
     return regionCode;
 }
 
@@ -167,7 +167,7 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
         if (localCallingCode != nil) {
             NSString *localCallingCodePrefix = [NSString stringWithFormat:@"+%@", localCallingCode];
             NSString *localCountryCode =
-                [PhoneNumberUtil.sharedUtil probableCountryCodeForCallingCode:localCallingCodePrefix];
+            [PhoneNumberUtil.sharedUtil probableCountryCodeForCallingCode:localCallingCodePrefix];
             if (localCountryCode && ![localCountryCode isEqualToString:[self defaultRegionCode]]) {
                 NBMetadataHelper *helper = [[NBMetadataHelper alloc] init];
                 NBPhoneMetaData *localNumberRegionMetadata = [helper getMetadataForRegion:localCountryCode];
@@ -184,7 +184,7 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
                                                      clientPhoneNumber:(NSString *)clientPhoneNumber
 {
     NSMutableArray<PhoneNumber *> *result =
-        [[self tryParsePhoneNumbersFromNormalizedText:text clientPhoneNumber:clientPhoneNumber] mutableCopy];
+    [[self tryParsePhoneNumbersFromNormalizedText:text clientPhoneNumber:clientPhoneNumber] mutableCopy];
 
     // A handful of countries (Mexico, Argentina, etc.) require a "national" prefix after
     // their country calling code.
@@ -196,29 +196,29 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
     // contacts intersection.
     //
     // 1. Try to apply a "national prefix" using the phone's region.
-    NSString *nationalPrefixTransformRuleForDefaultRegion = [self nationalPrefixTransformRuleForDefaultRegion];
-    if ([nationalPrefixTransformRuleForDefaultRegion containsString:@"$1"]) {
-        NSString *normalizedText =
-            [nationalPrefixTransformRuleForDefaultRegion stringByReplacingOccurrencesOfString:@"$1" withString:text];
-        if (![normalizedText containsString:@"$"]) {
-            [result addObjectsFromArray:[self tryParsePhoneNumbersFromNormalizedText:normalizedText
-                                                                   clientPhoneNumber:clientPhoneNumber]];
-        }
-    }
+    //    NSString *nationalPrefixTransformRuleForDefaultRegion = [self nationalPrefixTransformRuleForDefaultRegion];
+    //    if ([nationalPrefixTransformRuleForDefaultRegion containsString:@"$1"]) {
+    //        NSString *normalizedText =
+    //            [nationalPrefixTransformRuleForDefaultRegion stringByReplacingOccurrencesOfString:@"$1" withString:text];
+    //        if (![normalizedText containsString:@"$"]) {
+    //            [result addObjectsFromArray:[self tryParsePhoneNumbersFromNormalizedText:normalizedText
+    //                                                                   clientPhoneNumber:clientPhoneNumber]];
+    //        }
+    //    }
 
     // 2. Try to apply a "national prefix" using the region that corresponds to the
     //    calling code for the local phone number.
-    NSString *nationalPrefixTransformRuleForClientPhoneNumber =
-        [self nationalPrefixTransformRuleForClientPhoneNumber:clientPhoneNumber];
-    if ([nationalPrefixTransformRuleForClientPhoneNumber containsString:@"$1"]) {
-        NSString *normalizedText =
-            [nationalPrefixTransformRuleForClientPhoneNumber stringByReplacingOccurrencesOfString:@"$1"
-                                                                                       withString:text];
-        if (![normalizedText containsString:@"$"]) {
-            [result addObjectsFromArray:[self tryParsePhoneNumbersFromNormalizedText:normalizedText
-                                                                   clientPhoneNumber:clientPhoneNumber]];
-        }
-    }
+    //    NSString *nationalPrefixTransformRuleForClientPhoneNumber =
+    //        [self nationalPrefixTransformRuleForClientPhoneNumber:clientPhoneNumber];
+    //    if ([nationalPrefixTransformRuleForClientPhoneNumber containsString:@"$1"]) {
+    //        NSString *normalizedText =
+    //            [nationalPrefixTransformRuleForClientPhoneNumber stringByReplacingOccurrencesOfString:@"$1"
+    //                                                                                       withString:text];
+    //        if (![normalizedText containsString:@"$"]) {
+    //            [result addObjectsFromArray:[self tryParsePhoneNumbersFromNormalizedText:normalizedText
+    //                                                                   clientPhoneNumber:clientPhoneNumber]];
+    //        }
+    //    }
 
     return [result copy];
 }
@@ -232,14 +232,14 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
     if ([text isEqualToString:@""]) {
         return nil;
     }
-    
+
     NSString *sanitizedString = [self removeFormattingCharacters:text];
     OWSAssert(sanitizedString != nil);
 
     NSMutableArray *result = [NSMutableArray new];
     NSMutableSet *phoneNumberSet = [NSMutableSet new];
     void (^tryParsingWithCountryCode)(NSString *, NSString *) = ^(NSString *text,
-                                                      NSString *countryCode) {
+                                                                  NSString *countryCode) {
         PhoneNumber *phoneNumber = [PhoneNumber phoneNumberFromText:text
                                                           andRegion:countryCode];
         if (phoneNumber && [phoneNumber toE164] && ![phoneNumberSet containsObject:[phoneNumber toE164]]) {
@@ -261,35 +261,35 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
 
     // Order matters; better results should appear first so prefer
     // matches with the same country code as this client's phone number.
-    OWSAssert(clientPhoneNumber.length > 0);
-    if (clientPhoneNumber.length > 0) {
-        // Note that NBPhoneNumber uses "country code" to refer to what we call a
-        // "calling code" (i.e. 44 in +44123123).  Within SSK we use "country code"
-        // (and sometimes "region code") to refer to a country's ISO 2-letter code
-        // (ISO 3166-1 alpha-2).
-        NSNumber *callingCodeForLocalNumber = [[PhoneNumber phoneNumberFromE164:clientPhoneNumber] getCountryCode];
-        if (callingCodeForLocalNumber != nil) {
-            NSString *callingCodePrefix = [NSString stringWithFormat:@"+%@", callingCodeForLocalNumber];
+    //    OWSAssert(clientPhoneNumber.length > 0);
+    //    if (clientPhoneNumber.length > 0) {
+    //        // Note that NBPhoneNumber uses "country code" to refer to what we call a
+    //        // "calling code" (i.e. 44 in +44123123).  Within SSK we use "country code"
+    //        // (and sometimes "region code") to refer to a country's ISO 2-letter code
+    //        // (ISO 3166-1 alpha-2).
+    //        NSNumber *callingCodeForLocalNumber = [[PhoneNumber phoneNumberFromE164:clientPhoneNumber] getCountryCode];
+    //        if (callingCodeForLocalNumber != nil) {
+    //            NSString *callingCodePrefix = [NSString stringWithFormat:@"+%@", callingCodeForLocalNumber];
+    //
+    //            tryParsingWithCountryCode(
+    //                [callingCodePrefix stringByAppendingString:sanitizedString], [self defaultRegionCode]);
+    //
+    //            // Try to determine what the country code is for the local phone number
+    //            // and also try parsing the phone number using that country code if it
+    //            // differs from the device's region code.
+    //            //
+    //            // For example, a French person living in Italy might have an
+    //            // Italian phone number but use French region/language for their
+    //            // phone. They're likely to have both Italian and French contacts.
+    //            NSString *localCountryCode =
+    //                [PhoneNumberUtil.sharedUtil probableCountryCodeForCallingCode:callingCodePrefix];
+    //            if (localCountryCode && ![localCountryCode isEqualToString:[self defaultRegionCode]]) {
+    //                tryParsingWithCountryCode(
+    //                    [callingCodePrefix stringByAppendingString:sanitizedString], localCountryCode);
+    //            }
+    //        }
+    //    }
 
-            tryParsingWithCountryCode(
-                [callingCodePrefix stringByAppendingString:sanitizedString], [self defaultRegionCode]);
-
-            // Try to determine what the country code is for the local phone number
-            // and also try parsing the phone number using that country code if it
-            // differs from the device's region code.
-            //
-            // For example, a French person living in Italy might have an
-            // Italian phone number but use French region/language for their
-            // phone. They're likely to have both Italian and French contacts.
-            NSString *localCountryCode =
-                [PhoneNumberUtil.sharedUtil probableCountryCodeForCallingCode:callingCodePrefix];
-            if (localCountryCode && ![localCountryCode isEqualToString:[self defaultRegionCode]]) {
-                tryParsingWithCountryCode(
-                    [callingCodePrefix stringByAppendingString:sanitizedString], localCountryCode);
-            }
-        }
-    }
-    
     return result;
 }
 
@@ -336,7 +336,7 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
 
     NSError *formatError = nil;
     NSString *pretty =
-        [phoneUtil format:self.phoneNumber numberFormat:NBEPhoneNumberFormatINTERNATIONAL error:&formatError];
+    [phoneUtil format:self.phoneNumber numberFormat:NBEPhoneNumberFormatINTERNATIONAL error:&formatError];
 
     if (formatError != nil) {
         return self.e164;
@@ -371,3 +371,4 @@ static NSString *const RPDefaultsKeyPhoneNumberCanonical = @"RPDefaultsKeyPhoneN
 }
 
 @end
+

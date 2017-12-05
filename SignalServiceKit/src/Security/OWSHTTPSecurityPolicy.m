@@ -7,6 +7,8 @@
 
 #import <AssertMacros.h>
 
+static NSString *CertificateServiceName;
+
 @implementation OWSHTTPSecurityPolicy
 
 + (instancetype)sharedPolicy {
@@ -23,15 +25,25 @@
 
     if (self) {
         self.pinnedCertificates = [NSSet setWithArray:@[
-            [self certificateDataForService:@"textsecure"],
-        ]];
+                                                        [self certificateDataForService:[OWSHTTPSecurityPolicy certificateServiceName]],
+                                                        ]];
     }
 
     return self;
 }
 
 - (NSArray *)certs {
-    return @[ (__bridge id)[self certificateForService:@"textsecure"] ];
+    return @[ (__bridge id)[self certificateForService:[OWSHTTPSecurityPolicy certificateServiceName]] ];
+}
+
++ (void)setCertificateServiceName:(NSString *)serviceName
+{
+    CertificateServiceName = serviceName;
+}
+
++ (NSString *)certificateServiceName
+{
+    return CertificateServiceName;
 }
 
 - (NSData *)certificateDataForService:(NSString *)service {
@@ -44,9 +56,9 @@
 
     if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
         @throw [NSException
-            exceptionWithName:@"Missing server certificate"
-                       reason:[NSString stringWithFormat:@"Missing signing certificate for service %@", service]
-                     userInfo:nil];
+                exceptionWithName:@"Missing server certificate"
+                reason:[NSString stringWithFormat:@"Missing signing certificate for service %@", service]
+                userInfo:nil];
     }
 
     NSData *certificateData = [NSData dataWithContentsOfFile:path];
@@ -66,7 +78,7 @@
     NSMutableArray *pinnedCertificates = [NSMutableArray array];
     for (NSData *certificateData in self.pinnedCertificates) {
         [pinnedCertificates
-            addObject:(__bridge_transfer id)SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificateData)];
+         addObject:(__bridge_transfer id)SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificateData)];
     }
 
     if (SecTrustSetAnchorCertificates(serverTrust, (__bridge CFArrayRef)pinnedCertificates) != errSecSuccess) {

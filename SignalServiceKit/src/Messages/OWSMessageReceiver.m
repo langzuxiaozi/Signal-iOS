@@ -15,6 +15,8 @@
 #import <YapDatabase/YapDatabaseConnection.h>
 #import <YapDatabase/YapDatabaseTransaction.h>
 #import <YapDatabase/YapDatabaseView.h>
+#import <YapDatabase/YapDatabaseAutoView.h>
+#import <YapDatabase/YapDatabaseViewTypes.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -132,49 +134,49 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 + (YapDatabaseView *)databaseExtension
 {
     YapDatabaseViewSorting *sorting =
-        [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(YapDatabaseReadTransaction *transaction,
-            NSString *group,
-            NSString *collection1,
-            NSString *key1,
-            id object1,
-            NSString *collection2,
-            NSString *key2,
-            id object2) {
+    [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(YapDatabaseReadTransaction *transaction,
+                                                                NSString *group,
+                                                                NSString *collection1,
+                                                                NSString *key1,
+                                                                id object1,
+                                                                NSString *collection2,
+                                                                NSString *key2,
+                                                                id object2) {
 
-            if (![object1 isKindOfClass:[OWSMessageDecryptJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", [object1 class], collection1);
-                return NSOrderedSame;
-            }
-            OWSMessageDecryptJob *job1 = (OWSMessageDecryptJob *)object1;
+        if (![object1 isKindOfClass:[OWSMessageDecryptJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", [object1 class], collection1);
+            return NSOrderedSame;
+        }
+        OWSMessageDecryptJob *job1 = (OWSMessageDecryptJob *)object1;
 
-            if (![object2 isKindOfClass:[OWSMessageDecryptJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", [object2 class], collection2);
-                return NSOrderedSame;
-            }
-            OWSMessageDecryptJob *job2 = (OWSMessageDecryptJob *)object2;
+        if (![object2 isKindOfClass:[OWSMessageDecryptJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", [object2 class], collection2);
+            return NSOrderedSame;
+        }
+        OWSMessageDecryptJob *job2 = (OWSMessageDecryptJob *)object2;
 
-            return [job1.createdAt compare:job2.createdAt];
-        }];
+        return [job1.createdAt compare:job2.createdAt];
+    }];
 
     YapDatabaseViewGrouping *grouping =
-        [YapDatabaseViewGrouping withObjectBlock:^NSString *_Nullable(YapDatabaseReadTransaction *_Nonnull transaction,
-            NSString *_Nonnull collection,
-            NSString *_Nonnull key,
-            id _Nonnull object) {
-            if (![object isKindOfClass:[OWSMessageDecryptJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", object, collection);
-                return nil;
-            }
+    [YapDatabaseViewGrouping withObjectBlock:^NSString *_Nullable(YapDatabaseReadTransaction *_Nonnull transaction,
+                                                                  NSString *_Nonnull collection,
+                                                                  NSString *_Nonnull key,
+                                                                  id _Nonnull object) {
+        if (![object isKindOfClass:[OWSMessageDecryptJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", object, collection);
+            return nil;
+        }
 
-            // Arbitrary string - all in the same group. We're only using the view for sorting.
-            return OWSMessageDecryptJobFinderExtensionGroup;
-        }];
+        // Arbitrary string - all in the same group. We're only using the view for sorting.
+        return OWSMessageDecryptJobFinderExtensionGroup;
+    }];
 
     YapDatabaseViewOptions *options = [YapDatabaseViewOptions new];
     options.allowedCollections =
-        [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OWSMessageDecryptJob collection]]];
+    [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OWSMessageDecryptJob collection]]];
 
-    return [[YapDatabaseView alloc] initWithGrouping:grouping sorting:sorting versionTag:@"1" options:options];
+    return [[YapDatabaseAutoView alloc] initWithGrouping:grouping sorting:sorting versionTag:@"1" options:options];
 }
 
 + (void)registerLegacyClasses
@@ -305,9 +307,9 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
           completion:^(BOOL success) {
               [self.finder removeJobWithId:job.uniqueId];
               DDLogVerbose(@"%@ %@ job. %lu jobs left.",
-                  self.tag,
-                  success ? @"decrypted" : @"failed to decrypt",
-                  (unsigned long)[OWSMessageDecryptJob numberOfKeysInCollection]);
+                           self.tag,
+                           success ? @"decrypted" : @"failed to decrypt",
+                           (unsigned long)[OWSMessageDecryptJob numberOfKeysInCollection]);
               [self drainQueueWorkStep];
           }];
 }
@@ -319,21 +321,21 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 
     OWSSignalServiceProtosEnvelope *envelope = job.envelopeProto;
     [self.messageDecrypter decryptEnvelope:envelope
-        successBlock:^(NSData *_Nullable plaintextData) {
+                              successBlock:^(NSData *_Nullable plaintextData) {
 
-            // We can't decrypt the same message twice, so we need to persist
-            // the decrypted envelope data ASAP to prevent data loss.
-            [self.batchMessageProcessor enqueueEnvelopeData:job.envelopeData plaintextData:plaintextData];
+                                  // We can't decrypt the same message twice, so we need to persist
+                                  // the decrypted envelope data ASAP to prevent data loss.
+                                  [self.batchMessageProcessor enqueueEnvelopeData:job.envelopeData plaintextData:plaintextData];
 
-            dispatch_async(self.serialQueue, ^{
-                completion(YES);
-            });
-        }
-        failureBlock:^{
-            dispatch_async(self.serialQueue, ^{
-                completion(NO);
-            });
-        }];
+                                  dispatch_async(self.serialQueue, ^{
+                                      completion(YES);
+                                  });
+                              }
+                              failureBlock:^{
+                                  dispatch_async(self.serialQueue, ^{
+                                      completion(NO);
+                                  });
+                              }];
 }
 
 #pragma mark Logging
@@ -376,9 +378,9 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 
     OWSMessageDecryptJobFinder *finder = [[OWSMessageDecryptJobFinder alloc] initWithDBConnection:dbConnection];
     OWSMessageDecryptQueue *processingQueue =
-        [[OWSMessageDecryptQueue alloc] initWithMessageDecrypter:messageDecrypter
-                                           batchMessageProcessor:batchMessageProcessor
-                                                          finder:finder];
+    [[OWSMessageDecryptQueue alloc] initWithMessageDecrypter:messageDecrypter
+                                       batchMessageProcessor:batchMessageProcessor
+                                                      finder:finder];
 
     _processingQueue = processingQueue;
 
@@ -446,3 +448,4 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 @end
 
 NS_ASSUME_NONNULL_END
+

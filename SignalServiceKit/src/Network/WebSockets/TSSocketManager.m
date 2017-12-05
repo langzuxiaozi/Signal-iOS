@@ -93,7 +93,7 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
     if (!self) {
         return self;
     }
-    
+
     OWSAssert([NSThread isMainThread]);
 
     _signalService = [OWSSignalService sharedInstance];
@@ -238,9 +238,9 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
     }
 
     DDLogWarn(@"%@ Socket state: %@ -> %@",
-        self.tag,
-        [self stringFromSocketManagerState:_state],
-        [self stringFromSocketManagerState:state]);
+              self.tag,
+              [self stringFromSocketManagerState:_state],
+              [self stringFromSocketManagerState:state]);
 
     // If this state update is _not_ redundant,
     // update class state to reflect the new state.
@@ -268,16 +268,18 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
         case SocketManagerStateConnecting: {
             // Discard the old socket which is already closed or is closing.
             [self resetSocket];
-            
+
             // Create a new web socket.
+            NSString *textSecureWebSocketAPI = [NSString stringWithFormat:@"%@/v1/websocket/", [OWSSignalService baseURLPath]];
+
             NSString *webSocketConnect = [textSecureWebSocketAPI stringByAppendingString:[self webSocketAuthenticationString]];
             NSURL *webSocketConnectURL   = [NSURL URLWithString:webSocketConnect];
             NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:webSocketConnectURL];
-            
+
             SRWebSocket *socket = [[SRWebSocket alloc] initWithURLRequest:request
                                                            securityPolicy:[OWSWebsocketSecurityPolicy sharedPolicy]];
             socket.delegate = self;
-            
+
             [self setWebsocket:socket];
 
             // [SRWebSocket open] could hypothetically call a delegate method (e.g. if
@@ -383,11 +385,14 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
             NSData *decryptedPayload =
-                [Cryptography decryptAppleMessagePayload:message.body withSignalingKey:TSAccountManager.signalingKey];
+            [Cryptography decryptAppleMessagePayload:message.body withSignalingKey:TSAccountManager.signalingKey];
 
             if (!decryptedPayload) {
                 DDLogWarn(@"%@ Failed to decrypt incoming payload or bad HMAC", self.tag);
-                [self sendWebSocketMessageAcknowledgement:message];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self sendWebSocketMessageAcknowledgement:message];
+                });
+
                 return;
             }
 
@@ -483,8 +488,8 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 
 - (NSString *)webSocketAuthenticationString {
     return [NSString stringWithFormat:@"?login=%@&password=%@",
-                     [[TSAccountManager localNumber] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"],
-                     [TSAccountManager serverAuthToken]];
+            [[TSAccountManager localNumber] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"],
+            [TSAccountManager serverAuthToken]];
 }
 
 #pragma mark - Socket LifeCycle
@@ -702,3 +707,4 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 }
 
 @end
+

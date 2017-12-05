@@ -14,6 +14,8 @@
 #import <YapDatabase/YapDatabaseConnection.h>
 #import <YapDatabase/YapDatabaseTransaction.h>
 #import <YapDatabase/YapDatabaseView.h>
+#import <YapDatabase/YapDatabaseAutoView.h>
+#import <YapDatabase/YapDatabaseViewTypes.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -115,10 +117,10 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
         OWSAssert(viewTransaction != nil);
         [viewTransaction enumerateKeysAndObjectsInGroup:OWSMessageContentJobFinderExtensionGroup
                                              usingBlock:^(NSString *_Nonnull collection,
-                                                 NSString *_Nonnull key,
-                                                 id _Nonnull object,
-                                                 NSUInteger index,
-                                                 BOOL *_Nonnull stop) {
+                                                          NSString *_Nonnull key,
+                                                          id _Nonnull object,
+                                                          NSUInteger index,
+                                                          BOOL *_Nonnull stop) {
                                                  OWSMessageContentJob *job = object;
                                                  [jobs addObject:job];
                                                  if (jobs.count >= maxBatchSize) {
@@ -135,7 +137,7 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
     // We need to persist the decrypted envelope data ASAP to prevent data loss.
     [self.dbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
         OWSMessageContentJob *job =
-            [[OWSMessageContentJob alloc] initWithEnvelopeData:envelopeData plaintextData:plaintextData];
+        [[OWSMessageContentJob alloc] initWithEnvelopeData:envelopeData plaintextData:plaintextData];
         [job saveWithTransaction:transaction];
     }];
 }
@@ -150,49 +152,49 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
 + (YapDatabaseView *)databaseExtension
 {
     YapDatabaseViewSorting *sorting =
-        [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(YapDatabaseReadTransaction *transaction,
-            NSString *group,
-            NSString *collection1,
-            NSString *key1,
-            id object1,
-            NSString *collection2,
-            NSString *key2,
-            id object2) {
+    [YapDatabaseViewSorting withObjectBlock:^NSComparisonResult(YapDatabaseReadTransaction *transaction,
+                                                                NSString *group,
+                                                                NSString *collection1,
+                                                                NSString *key1,
+                                                                id object1,
+                                                                NSString *collection2,
+                                                                NSString *key2,
+                                                                id object2) {
 
-            if (![object1 isKindOfClass:[OWSMessageContentJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", [object1 class], collection1);
-                return NSOrderedSame;
-            }
-            OWSMessageContentJob *job1 = (OWSMessageContentJob *)object1;
+        if (![object1 isKindOfClass:[OWSMessageContentJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", [object1 class], collection1);
+            return NSOrderedSame;
+        }
+        OWSMessageContentJob *job1 = (OWSMessageContentJob *)object1;
 
-            if (![object2 isKindOfClass:[OWSMessageContentJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", [object2 class], collection2);
-                return NSOrderedSame;
-            }
-            OWSMessageContentJob *job2 = (OWSMessageContentJob *)object2;
+        if (![object2 isKindOfClass:[OWSMessageContentJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", [object2 class], collection2);
+            return NSOrderedSame;
+        }
+        OWSMessageContentJob *job2 = (OWSMessageContentJob *)object2;
 
-            return [job1.createdAt compare:job2.createdAt];
-        }];
+        return [job1.createdAt compare:job2.createdAt];
+    }];
 
     YapDatabaseViewGrouping *grouping =
-        [YapDatabaseViewGrouping withObjectBlock:^NSString *_Nullable(YapDatabaseReadTransaction *_Nonnull transaction,
-            NSString *_Nonnull collection,
-            NSString *_Nonnull key,
-            id _Nonnull object) {
-            if (![object isKindOfClass:[OWSMessageContentJob class]]) {
-                OWSFail(@"Unexpected object: %@ in collection: %@", object, collection);
-                return nil;
-            }
+    [YapDatabaseViewGrouping withObjectBlock:^NSString *_Nullable(YapDatabaseReadTransaction *_Nonnull transaction,
+                                                                  NSString *_Nonnull collection,
+                                                                  NSString *_Nonnull key,
+                                                                  id _Nonnull object) {
+        if (![object isKindOfClass:[OWSMessageContentJob class]]) {
+            OWSFail(@"Unexpected object: %@ in collection: %@", object, collection);
+            return nil;
+        }
 
-            // Arbitrary string - all in the same group. We're only using the view for sorting.
-            return OWSMessageContentJobFinderExtensionGroup;
-        }];
+        // Arbitrary string - all in the same group. We're only using the view for sorting.
+        return OWSMessageContentJobFinderExtensionGroup;
+    }];
 
     YapDatabaseViewOptions *options = [YapDatabaseViewOptions new];
     options.allowedCollections =
-        [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OWSMessageContentJob collection]]];
+    [[YapWhitelistBlacklist alloc] initWithWhitelist:[NSSet setWithObject:[OWSMessageContentJob collection]]];
 
-    return [[YapDatabaseView alloc] initWithGrouping:grouping sorting:sorting versionTag:@"1" options:options];
+    return [[YapDatabaseAutoView alloc] initWithGrouping:grouping sorting:sorting versionTag:@"1" options:options];
 }
 
 
@@ -333,9 +335,9 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
     [self.finder removeJobsWithIds:jobs.uniqueIds];
 
     DDLogVerbose(@"%@ completed %zd jobs. %zd jobs left.",
-        self.tag,
-        jobs.count,
-        [OWSMessageContentJob numberOfKeysInCollection]);
+                 self.tag,
+                 jobs.count,
+                 [OWSMessageContentJob numberOfKeysInCollection]);
 
     // Wait a bit in hopes of increasing the batch size.
     // This delay won't affect the first message to arrive when this queue is idle,
@@ -455,3 +457,4 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
 @end
 
 NS_ASSUME_NONNULL_END
+

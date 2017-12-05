@@ -35,19 +35,45 @@ NS_ASSUME_NONNULL_BEGIN
     NSMutableArray<TSInteraction *> *interactions = [NSMutableArray new];
 
     [TSDatabaseSecondaryIndexes
-        enumerateMessagesWithTimestamp:timestamp
-                             withBlock:^(NSString *collection, NSString *key, BOOL *stop) {
+     enumerateMessagesWithTimestamp:timestamp
+     withBlock:^(NSString *collection, NSString *key, BOOL *stop) {
 
-                                 TSInteraction *interaction =
-                                     [TSInteraction fetchObjectWithUniqueID:key transaction:transaction];
-                                 if (!filter(interaction)) {
-                                     return;
-                                 }
-                                 [interactions addObject:interaction];
-                             }
-                      usingTransaction:transaction];
+         TSInteraction *interaction =
+         [TSInteraction fetchObjectWithUniqueID:key transaction:transaction];
+         if (!filter(interaction)) {
+             return;
+         }
+         [interactions addObject:interaction];
+     }
+     usingTransaction:transaction];
 
     return [interactions copy];
+}
+
+- (NSString *)description {
+    return @"Interaction description";
+}
+
+- (NSString *)paymentStateText
+{
+    NSString *path = [[NSBundle bundleForClass:[TSInteraction class]] pathForResource:@"SignalServiceKit" ofType:@"bundle"];
+    NSBundle *bundle = [NSBundle bundleWithPath:path];
+    if (!bundle) {
+        bundle = [NSBundle mainBundle];
+    }
+
+    switch (self.paymentState) {
+        case TSPaymentStateFailed:
+            return [bundle localizedStringForKey:@"payment-state-failed" value:@"Failed" table:@"Localizable"];
+        case TSPaymentStatePendingConfirmation:
+            return [bundle localizedStringForKey:@"payment-state-requested" value:@"Requested" table:@"Localizable"];
+        case TSPaymentStateRejected:
+            return [bundle localizedStringForKey:@"payment-state-rejected" value:@"Rejected" table:@"Localizable"];
+        case TSPaymentStateApproved:
+            return [bundle localizedStringForKey:@"payment-state-approved" value:@"Approved" table:@"Localizable"];
+        default:
+            return @"";
+    }
 }
 
 + (NSString *)collection {
@@ -127,10 +153,6 @@ NS_ASSUME_NONNULL_BEGIN
     return OWSInteractionType_Unknown;
 }
 
-- (NSString *)description {
-    return @"Interaction description";
-}
-
 - (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction {
     if (!self.uniqueId) {
         self.uniqueId = [TSStorageManager getAndIncrementMessageIdWithTransaction:transaction];
@@ -170,3 +192,4 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
+

@@ -26,6 +26,9 @@ extern NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidCha
 
 - (instancetype)init NS_UNAVAILABLE;
 
++ (void)setBaseURLPath:(NSString *)baseURLPath;
++ (NSString *)baseURLPath;
+
 - (BOOL)isCensorshipCircumventionManuallyActivated;
 - (void)setIsCensorshipCircumventionManuallyActivated:(BOOL)value;
 
@@ -40,3 +43,4 @@ extern NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidCha
 @end
 
 NS_ASSUME_NONNULL_END
+

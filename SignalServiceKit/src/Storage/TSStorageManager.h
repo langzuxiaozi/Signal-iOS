@@ -18,6 +18,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)sharedManager;
 
+- (void)setupForAccountName:(NSString *)accountName isFirstLaunch:(BOOL)isFirstLaunch;
+
+- (int)getOrGenerateResortID;
+
+- (nullable NSString *)corruptedChatDBFilePath;
+
 /**
  * Returns NO if:
  *
@@ -37,32 +43,39 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)())safeBlockingMigrationsBlock;
 
 - (void)deleteThreadsAndMessages;
-- (void)resetSignalStorage;
+- (void)resetSignalStorageWithBackup:(BOOL)withBackup;
 
 - (nullable YapDatabase *)database;
 - (nullable YapDatabaseConnection *)newDatabaseConnection;
+
+- (nullable YapDatabaseConnection *)newKeysDatabaseConnection;
 
 - (void)setObject:(id)object forKey:(NSString *)key inCollection:(NSString *)collection;
 - (void)removeObjectForKey:(NSString *)string inCollection:(NSString *)collection;
 
 - (BOOL)boolForKey:(NSString *)key inCollection:(NSString *)collection;
+- (id)objectForKey:(NSString *)key inCollection:(NSString *)collection;
+
+- (void)setKeysObject:(id)object forKey:(NSString *)key inCollection:(NSString *)collection;
+- (void)removeKeysObjectForKey:(NSString *)string inCollection:(NSString *)collection;
+
 - (int)intForKey:(NSString *)key inCollection:(NSString *)collection;
 - (void)setInt:(int)integer forKey:(NSString *)key inCollection:(NSString *)collection;
-- (id)objectForKey:(NSString *)key inCollection:(NSString *)collection;
+- (id)keysObjectForKey:(NSString *)key inCollection:(NSString *)collection;
 - (int)incrementIntForKey:(NSString *)key inCollection:(NSString *)collection;
 - (nullable NSDate *)dateForKey:(NSString *)key inCollection:(NSString *)collection;
 - (void)setDate:(NSDate *)value forKey:(NSString *)key inCollection:(NSString *)collection;
-- (nullable NSDictionary *)dictionaryForKey:(NSString *)key inCollection:(NSString *)collection;
-- (nullable NSString *)stringForKey:(NSString *)key inCollection:(NSString *)collection;
-- (nullable NSData *)dataForKey:(NSString *)key inCollection:(NSString *)collection;
 - (nullable ECKeyPair *)keyPairForKey:(NSString *)key inCollection:(NSString *)collection;
 - (nullable PreKeyRecord *)preKeyRecordForKey:(NSString *)key inCollection:(NSString *)collection;
 - (nullable SignedPreKeyRecord *)signedPreKeyRecordForKey:(NSString *)key inCollection:(NSString *)collection;
-- (void)purgeCollection:(NSString *)collection;
 
 @property (nullable, nonatomic, readonly) YapDatabaseConnection *dbReadConnection;
 @property (nullable, nonatomic, readonly) YapDatabaseConnection *dbReadWriteConnection;
 
+@property (nullable, nonatomic, readonly) YapDatabaseConnection *keysDBReadConnection;
+@property (nullable, nonatomic, readonly) YapDatabaseConnection *keysDBReadWriteConnection;
+
 @end
 
 NS_ASSUME_NONNULL_END
+

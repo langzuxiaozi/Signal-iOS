@@ -58,6 +58,9 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 + (nullable NSString *)serverAuthToken;
 - (nullable NSString *)serverAuthToken;
 
+
+- (void)storeServerAuthToken:(NSString *)authToken signalingKey:(NSString *)signalingKey;
+
 /**
  *  The registration ID is unique to an installation of TextSecure, it allows to know if the app was reinstalled
  *
@@ -90,6 +93,8 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 // - uploaded push tokens
 - (void)didRegister;
 
+- (void)storeLocalNumber:(NSString *)localNumber;
+
 #if TARGET_OS_IPHONE
 
 /**
@@ -98,10 +103,10 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
  *  @param pushToken Apple's Push Token
  */
 - (void)registerForPushNotificationsWithPushToken:(NSString *)pushToken
-                                        voipToken:(NSString *)voipToken
+                                        voipToken:(nullable NSString *)voipToken
                                           success:(void (^)())successHandler
                                           failure:(void (^)(NSError *error))failureHandler
-    NS_SWIFT_NAME(registerForPushNotifications(pushToken:voipToken:success:failure:));
+NS_SWIFT_NAME(registerForPushNotifications(pushToken:voipToken:success:failure:));
 
 #endif
 
@@ -110,3 +115,4 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 @end
 
 NS_ASSUME_NONNULL_END
+
