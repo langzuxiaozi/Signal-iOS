@@ -62,7 +62,9 @@ NSString *const GroupInfoString = @"updateInfoString";
     NSString *updatedGroupInfoString = @"";
 
     if (self == newModel) {
-        return NSLocalizedString(@"GROUP_UPDATED", @"");
+        return @{GroupUpdateTypeSting: NSLocalizedString(@"GROUP_UPDATED", @""),
+                 GroupInfoString: updatedGroupInfoString
+                 };
     }
 
     if (![_groupName isEqual:newModel.groupName]) {
