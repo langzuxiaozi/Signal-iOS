@@ -5,6 +5,9 @@
 #import "TSYapDatabaseObject.h"
 #import "ContactsManagerProtocol.h"
 
+extern NSString *const GroupUpdateTypeSting;
+extern NSString *const GroupInfoString;
+
 @interface TSGroupModel : TSYapDatabaseObject
 
 @property (nonatomic, strong) NSArray<NSString *> *groupMemberIds;
@@ -21,7 +24,8 @@
 
 - (BOOL)isEqual:(id)other;
 - (BOOL)isEqualToGroupModel:(TSGroupModel *)model;
-- (NSString *)getInfoStringAboutUpdateTo:(TSGroupModel *)model contactsManager:(id<ContactsManagerProtocol>)contactsManager;
+- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel contactsManager:(id<ContactsManagerProtocol>)contactsManager;
 #endif
 
 @end
+

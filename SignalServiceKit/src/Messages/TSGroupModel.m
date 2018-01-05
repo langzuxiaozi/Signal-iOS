@@ -4,6 +4,11 @@
 
 #import "TSGroupModel.h"
 #import "FunctionalUtil.h"
+#import "TSStorageManager.h"
+#import "SignalRecipient.h"
+
+NSString *const GroupUpdateTypeSting = @"updateTypeString";
+NSString *const GroupInfoString = @"updateInfoString";
 
 @implementation TSGroupModel
 
@@ -52,24 +57,31 @@
     return YES;
 }
 
-- (NSString *)getInfoStringAboutUpdateTo:(TSGroupModel *)newModel contactsManager:(id<ContactsManagerProtocol>)contactsManager {
+- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel contactsManager:(id<ContactsManagerProtocol>)contactsManager {
+    NSString *updateTypeString = @"";
     NSString *updatedGroupInfoString = @"";
+
     if (self == newModel) {
         return NSLocalizedString(@"GROUP_UPDATED", @"");
     }
+
     if (![_groupName isEqual:newModel.groupName]) {
-        updatedGroupInfoString = [updatedGroupInfoString
-            stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(@"GROUP_TITLE_CHANGED", @""),
-                                                               newModel.groupName]];
+        updateTypeString = [updateTypeString
+                            stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(@"GROUP_TITLE_CHANGED", @""),
+                                                     newModel.groupName]];
+        updatedGroupInfoString = newModel.groupName;
     }
+
     if (_groupImage != nil && newModel.groupImage != nil &&
         !([UIImagePNGRepresentation(_groupImage) isEqualToData:UIImagePNGRepresentation(newModel.groupImage)])) {
-        updatedGroupInfoString =
-            [updatedGroupInfoString stringByAppendingString:NSLocalizedString(@"GROUP_AVATAR_CHANGED", @"")];
+        updateTypeString =
+        [updateTypeString stringByAppendingString:NSLocalizedString(@"GROUP_AVATAR_CHANGED", @"")];
     }
-    if ([updatedGroupInfoString length] == 0) {
-        updatedGroupInfoString = NSLocalizedString(@"GROUP_UPDATED", @"");
+
+    if ([updateTypeString length] == 0) {
+        updateTypeString = NSLocalizedString(@"GROUP_UPDATED", @"");
     }
+
     NSSet *oldMembers = [NSSet setWithArray:_groupMemberIds];
     NSSet *newMembers = [NSSet setWithArray:newModel.groupMemberIds];
 
@@ -79,29 +91,25 @@
     NSMutableSet *membersWhoLeft = [NSMutableSet setWithSet:oldMembers];
     [membersWhoLeft minusSet:newMembers];
 
-
     if ([membersWhoLeft count] > 0) {
-        NSArray *oldMembersNames = [[membersWhoLeft allObjects] map:^NSString*(NSString* item) {
-            return [contactsManager displayNameForPhoneIdentifier:item];
-        }];
-        updatedGroupInfoString = [updatedGroupInfoString
-                                  stringByAppendingString:[NSString
-                                                           stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_LEFT", @""),
-                                                           [oldMembersNames componentsJoinedByString:@", "]]];
+        NSString *oldMembersString = [[membersWhoLeft allObjects] componentsJoinedByString:@", "];
+        updateTypeString = [updateTypeString
+                            stringByAppendingString:[NSString
+                                                     stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_LEFT", @""),
+                                                     oldMembersString]];
+        updatedGroupInfoString = oldMembersString;
     }
-    
+
     if ([membersWhoJoined count] > 0) {
-        NSArray *newMembersNames = [[membersWhoJoined allObjects] map:^NSString*(NSString* item) {
-            return [contactsManager displayNameForPhoneIdentifier:item];
-        }];
-        updatedGroupInfoString = [updatedGroupInfoString
-                                  stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_JOINED", @""),
-                                                           [newMembersNames componentsJoinedByString:@", "]]];
+        updateTypeString = [NSString stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_JOINED", @""),
+                            [membersWhoJoined.allObjects componentsJoinedByString:@", "]];
+        updatedGroupInfoString = [membersWhoJoined.allObjects componentsJoinedByString:@", "];
     }
 
-    return updatedGroupInfoString;
+    return @{GroupUpdateTypeSting: updateTypeString,
+             GroupInfoString: updatedGroupInfoString
+             };
 }
-
 
 #endif
 
