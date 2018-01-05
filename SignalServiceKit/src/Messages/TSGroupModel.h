@@ -8,6 +8,12 @@
 extern NSString *const GroupUpdateTypeSting;
 extern NSString *const GroupInfoString;
 
+extern NSString *const GroupUpdatedMessage;
+extern NSString *const GroupTitleChangedMessage;
+extern NSString *const GroupAvatarChangedMessage;
+extern NSString *const GroupMemberLeftMessage;
+extern NSString *const GroupMemberJoinedMessage;
+
 @interface TSGroupModel : TSYapDatabaseObject
 
 @property (nonatomic, strong) NSArray<NSString *> *groupMemberIds;
@@ -28,4 +34,3 @@ extern NSString *const GroupInfoString;
 #endif
 
 @end
-

@@ -10,6 +10,12 @@
 NSString *const GroupUpdateTypeSting = @"updateTypeString";
 NSString *const GroupInfoString = @"updateInfoString";
 
+NSString *const GroupUpdatedMessage = @"GROUP_UPDATED";
+NSString *const GroupTitleChangedMessage = @"GROUP_TITLE_CHANGED";
+NSString *const GroupAvatarChangedMessage = @"GROUP_AVATAR_CHANGED";
+NSString *const GroupMemberLeftMessage = @"GROUP_MEMBER_LEFT";
+NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
+
 @implementation TSGroupModel
 
 #if TARGET_OS_IOS
@@ -62,14 +68,14 @@ NSString *const GroupInfoString = @"updateInfoString";
     NSString *updatedGroupInfoString = @"";
 
     if (self == newModel) {
-        return @{GroupUpdateTypeSting: NSLocalizedString(@"GROUP_UPDATED", @""),
+        return @{GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, @""),
                  GroupInfoString: updatedGroupInfoString
                  };
     }
 
     if (![_groupName isEqual:newModel.groupName]) {
         updateTypeString = [updateTypeString
-                            stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(@"GROUP_TITLE_CHANGED", @""),
+                            stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(GroupTitleChangedMessage, @""),
                                                      newModel.groupName]];
         updatedGroupInfoString = newModel.groupName;
     }
@@ -77,11 +83,11 @@ NSString *const GroupInfoString = @"updateInfoString";
     if (_groupImage != nil && newModel.groupImage != nil &&
         !([UIImagePNGRepresentation(_groupImage) isEqualToData:UIImagePNGRepresentation(newModel.groupImage)])) {
         updateTypeString =
-        [updateTypeString stringByAppendingString:NSLocalizedString(@"GROUP_AVATAR_CHANGED", @"")];
+        [updateTypeString stringByAppendingString:NSLocalizedString(GroupAvatarChangedMessage, @"")];
     }
 
     if ([updateTypeString length] == 0) {
-        updateTypeString = NSLocalizedString(@"GROUP_UPDATED", @"");
+        updateTypeString = NSLocalizedString(GroupUpdatedMessage, @"");
     }
 
     NSSet *oldMembers = [NSSet setWithArray:_groupMemberIds];
@@ -97,13 +103,13 @@ NSString *const GroupInfoString = @"updateInfoString";
         NSString *oldMembersString = [[membersWhoLeft allObjects] componentsJoinedByString:@", "];
         updateTypeString = [updateTypeString
                             stringByAppendingString:[NSString
-                                                     stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_LEFT", @""),
+                                                     stringWithFormat:NSLocalizedString(GroupMemberLeftMessage, @""),
                                                      oldMembersString]];
         updatedGroupInfoString = oldMembersString;
     }
 
     if ([membersWhoJoined count] > 0) {
-        updateTypeString = [NSString stringWithFormat:NSLocalizedString(@"GROUP_MEMBER_JOINED", @""),
+        updateTypeString = [NSString stringWithFormat:NSLocalizedString(GroupMemberJoinedMessage, @""),
                             [membersWhoJoined.allObjects componentsJoinedByString:@", "]];
         updatedGroupInfoString = [membersWhoJoined.allObjects componentsJoinedByString:@", "];
     }
