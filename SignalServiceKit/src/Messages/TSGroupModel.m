@@ -68,7 +68,8 @@ NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
     NSString *updatedGroupInfoString = @"";
 
     if (self == newModel) {
-        return @{GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, @""),
+        return @{
+                 GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, @""),
                  GroupInfoString: updatedGroupInfoString
                  };
     }
@@ -114,7 +115,8 @@ NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
         updatedGroupInfoString = [membersWhoJoined.allObjects componentsJoinedByString:@", "];
     }
 
-    return @{GroupUpdateTypeSting: updateTypeString,
+    return @{
+             GroupUpdateTypeSting: updateTypeString,
              GroupInfoString: updatedGroupInfoString
              };
 }
