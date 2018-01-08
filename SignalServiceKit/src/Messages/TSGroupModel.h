@@ -30,7 +30,7 @@ extern NSString *const GroupMemberJoinedMessage;
 
 - (BOOL)isEqual:(id)other;
 - (BOOL)isEqualToGroupModel:(TSGroupModel *)model;
-- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel contactsManager:(id<ContactsManagerProtocol>)contactsManager;
+- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel;
 #endif
 
 @end

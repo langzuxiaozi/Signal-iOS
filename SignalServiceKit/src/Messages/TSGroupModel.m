@@ -63,31 +63,34 @@ NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
     return YES;
 }
 
-- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel contactsManager:(id<ContactsManagerProtocol>)contactsManager {
+- (NSDictionary *)getInfoAboutUpdateTo:(TSGroupModel *)newModel {
     NSString *updateTypeString = @"";
     NSString *updatedGroupInfoString = @"";
 
     if (self == newModel) {
         return @{
-                 GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, @""),
+                 GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, updateTypeString),
                  GroupInfoString: updatedGroupInfoString
                  };
     }
 
-    if (![_groupName isEqual:newModel.groupName]) {
+    BOOL groupNameChanged = ![_groupName isEqual:newModel.groupName];
+    if (groupNameChanged) {
         updateTypeString = [updateTypeString
                             stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(GroupTitleChangedMessage, @""),
                                                      newModel.groupName]];
         updatedGroupInfoString = newModel.groupName;
     }
 
-    if (_groupImage != nil && newModel.groupImage != nil &&
-        !([UIImagePNGRepresentation(_groupImage) isEqualToData:UIImagePNGRepresentation(newModel.groupImage)])) {
+    BOOL groupAvatarChanged = _groupImage != nil && newModel.groupImage != nil &&
+    !([UIImagePNGRepresentation(_groupImage) isEqualToData:UIImagePNGRepresentation(newModel.groupImage)]);
+    if (groupAvatarChanged) {
         updateTypeString =
         [updateTypeString stringByAppendingString:NSLocalizedString(GroupAvatarChangedMessage, @"")];
     }
 
-    if ([updateTypeString length] == 0) {
+    BOOL noUpdateTypeMatched = [updateTypeString length] == 0;
+    if (noUpdateTypeMatched) {
         updateTypeString = NSLocalizedString(GroupUpdatedMessage, @"");
     }
 

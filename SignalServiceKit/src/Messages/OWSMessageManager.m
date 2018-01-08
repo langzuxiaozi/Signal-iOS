@@ -828,7 +828,7 @@ NS_ASSUME_NONNULL_BEGIN
         return;
     }
 
-    NSDictionary *updatedGroupInfo = [gThread.groupModel getInfoAboutUpdateTo:gThread.groupModel contactsManager:self.contactsManager];
+    NSDictionary *updatedGroupInfo = [gThread.groupModel getInfoAboutUpdateTo:gThread.groupModel];
     NSString *updateGroupInfoString = updatedGroupInfo[GroupUpdateTypeSting];
     TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
                                                                      inThread:gThread
@@ -882,8 +882,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                                         memberIds:[newMemberIds.allObjects mutableCopy]
                                                                             image:oldGroupThread.groupModel.groupImage
                                                                           groupId:dataMessage.group.id];
-                NSDictionary *updateGroupInfo = [newGroupThread.groupModel getInfoAboutUpdateTo:newGroupModel
-                                                                                contactsManager:self.contactsManager];
+                NSDictionary *updateGroupInfo = [newGroupThread.groupModel getInfoAboutUpdateTo:newGroupModel];
                 NSString *updatedTypeString = updateGroupInfo[GroupUpdateTypeSting];
                 NSString *updateInfoString = updateGroupInfo[GroupInfoString];
 
