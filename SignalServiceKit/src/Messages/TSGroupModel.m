@@ -76,10 +76,12 @@ NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
 
     BOOL groupNameChanged = ![_groupName isEqual:newModel.groupName];
     if (groupNameChanged) {
-        updateTypeString = [updateTypeString
-                            stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(GroupTitleChangedMessage, @""),
-                                                     newModel.groupName]];
-        updatedGroupInfoString = newModel.groupName;
+        return @{
+                 GroupUpdateTypeSting: [updateTypeString
+                                        stringByAppendingString:[NSString stringWithFormat:NSLocalizedString(GroupTitleChangedMessage, @""),
+                                                                 newModel.groupName]],
+                 GroupInfoString: newModel.groupName
+                 };
     }
 
     BOOL groupAvatarChanged = _groupImage != nil && newModel.groupImage != nil &&
