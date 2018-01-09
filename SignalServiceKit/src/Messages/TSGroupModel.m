@@ -10,6 +10,7 @@
 NSString *const GroupUpdateTypeSting = @"updateTypeString";
 NSString *const GroupInfoString = @"updateInfoString";
 
+NSString *const GroupCreateMessage = @"GROUP_CREATED";
 NSString *const GroupUpdatedMessage = @"GROUP_UPDATED";
 NSString *const GroupTitleChangedMessage = @"GROUP_TITLE_CHANGED";
 NSString *const GroupAvatarChangedMessage = @"GROUP_AVATAR_CHANGED";
@@ -67,9 +68,10 @@ NSString *const GroupMemberJoinedMessage = @"GROUP_MEMBER_JOINED";
     NSString *updateTypeString = @"";
     NSString *updatedGroupInfoString = @"";
 
-    if (self == newModel) {
+    BOOL isNewGroup = self.uniqueId == nil;
+    if (isNewGroup) {
         return @{
-                 GroupUpdateTypeSting: NSLocalizedString(GroupUpdatedMessage, updateTypeString),
+                 GroupUpdateTypeSting: NSLocalizedString(GroupCreateMessage, updateTypeString),
                  GroupInfoString: updatedGroupInfoString
                  };
     }
