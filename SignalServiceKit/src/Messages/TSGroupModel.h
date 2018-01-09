@@ -9,6 +9,7 @@ extern NSString *const GroupUpdateTypeSting;
 extern NSString *const GroupInfoString;
 
 extern NSString *const GroupCreateMessage;
+extern NSString *const GroupBecameMemberMessage;
 extern NSString *const GroupUpdatedMessage;
 extern NSString *const GroupTitleChangedMessage;
 extern NSString *const GroupAvatarChangedMessage;
