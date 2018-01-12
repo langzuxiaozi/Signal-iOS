@@ -1340,14 +1340,14 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
         [[[TSInfoMessage alloc] initWithTimestamp:message.timestamp
                                          inThread:thread
                                       messageType:TSInfoMessageTypeGroupQuit
-                                    customMessage:message.customMessage] save];
+                                    customMessage:@"No custom message needed for current user leave message"] save];
     } else {
         [[[TSInfoMessage alloc] initWithTimestamp:message.timestamp
-                                         authorId:@""
+                                         authorId:[[TSAccountManager sharedInstance] localNumber]
                                          inThread:thread
                                       messageType:TSInfoMessageTypeGroupUpdate
-                                    customMessage:message.customMessage
-                             additionalInfoString:thread.name] save];
+                                    customMessage:message.customInfo[GroupUpdateTypeSting]
+                             additionalInfoString:message.customInfo[GroupInfoString]] save];
     }
 }
 
