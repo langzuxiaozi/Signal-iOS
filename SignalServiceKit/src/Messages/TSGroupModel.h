@@ -20,8 +20,8 @@ extern NSString *const GroupMemberJoinedMessage;
 
 @interface TSGroupModel : TSYapDatabaseObject
 
-@property (nonatomic, strong) NSArray<NSString *> *groupMemberIds;
-@property (nonatomic, strong) NSString *groupName;
+@property (nonatomic, strong, nullable) NSArray<NSString *> *groupMemberIds;
+@property (nonatomic, strong, nullable) NSString *groupName;
 @property (nonatomic, strong, nullable) NSData *groupId;
 
 #if TARGET_OS_IOS
