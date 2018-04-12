@@ -80,6 +80,7 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 
 @property (nonatomic) BOOL hasObservedNotifications;
 
+@property (nonatomic) BOOL isInit;
 @end
 
 #pragma mark -
@@ -95,11 +96,8 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
     }
 
     OWSAssert([NSThread isMainThread]);
-
-    _signalService = [OWSSignalService sharedInstance];
-    _messageReceiver = [OWSMessageReceiver sharedInstance];
-    _state = SocketManagerStateClosed;
-    _fetchingTaskIdentifier = UIBackgroundTaskInvalid;
+    
+    [self setup];
 
     OWSSingletonAssert();
 
@@ -109,6 +107,17 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)setup{
+    if(!_isInit){
+        _isInit = YES;
+        _signalService = [OWSSignalService sharedInstance];
+        _messageReceiver = [OWSMessageReceiver sharedInstance];
+         [_messageReceiver setup];
+        _state = SocketManagerStateClosed;
+        _fetchingTaskIdentifier = UIBackgroundTaskInvalid;
+    }
 }
 
 // We want to observe these notifications lazily to avoid accessing
@@ -584,6 +593,7 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
 + (void)requestSocketOpen
 {
     DispatchMainThreadSafe(^{
+        [[self sharedManager] setup];
         [[self sharedManager] observeNotificationsIfNecessary];
 
         // If the app is active and the user is registered, this will
@@ -592,6 +602,18 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
         // If the app is inactive, it will open the websocket for a
         // period of time.
         [[self sharedManager] requestSocketAliveForAtLeastSeconds:kBackgroundOpenSocketDurationSeconds];
+    });
+}
+
+- (void)requestSocketClose
+{
+    DispatchMainThreadSafe(^{
+        _isInit = NO;
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+        self.hasObservedNotifications = NO;
+
+         [self applyDesiredSocketState];
+        [_messageReceiver close];
     });
 }
 

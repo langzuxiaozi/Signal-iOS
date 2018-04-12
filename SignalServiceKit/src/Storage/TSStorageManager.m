@@ -608,7 +608,6 @@ void setDatabaseInitialized()
     NSError *keyFetchError;
     NSString *dbPassword =
     [SAMKeychain passwordForService:key account:keychainDBPassAccount error:&keyFetchError];
-
     if (keyFetchError) {
         [self createAndSetNewDatabasePasswordForKey:key];
     }
@@ -829,21 +828,23 @@ void setDatabaseInitialized()
         DDLogError(@"Failed to delete KEYS database: %@", error.description);
     }
 
-    _keysDatabase = nil;
     _keysDBReadConnection = nil;
     _keysDBReadWriteConnection = nil;
-
+    _keysDatabase = nil;
+    
     if (withBackup) {
         [self backupDataBaseFile];
     }
 
-    self.database = nil;
     _dbReadConnection = nil;
     _dbReadWriteConnection = nil;
-
+    self.database = nil;
+    
     [TSAttachmentStream deleteAttachments];
 
     [self deleteDatabaseFile];
+    [TSDatabaseView sharedInstance].areAllAsyncRegistrationsComplete = NO;
+    [SAMKeychain deletePasswordForService:self.accountName account:keychainDBPassAccount];
 }
 
 #pragma mark - Logging

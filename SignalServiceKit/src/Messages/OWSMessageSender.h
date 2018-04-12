@@ -16,6 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class TSStorageManager;
 @class TSThread;
 @class YapDatabaseReadWriteTransaction;
+@class YapDatabaseConnection;
 
 @protocol ContactsManagerProtocol;
 
@@ -51,6 +52,8 @@ NS_SWIFT_NAME(MessageSender)
     OWSUploadingService *_uploadingService;
     ContactsUpdater *_contactsUpdater;
 }
+
+@property (nonatomic, strong) YapDatabaseConnection *dbConnection;
 
 - (instancetype)init NS_UNAVAILABLE;
 

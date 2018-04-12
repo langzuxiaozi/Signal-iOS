@@ -69,6 +69,8 @@
 - (TSStorageManager *)storageManager;
 + (TSStorageManager *)storageManager;
 
++ (void)clearDatabaseConnection;
+
 /**
  *  Fetches the object with the provided identifier
  *

@@ -97,7 +97,7 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
 
 - (instancetype)initWithDBConnection:(YapDatabaseConnection *)dbConnection
 {
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     self = [super init];
     if (!self) {
@@ -236,18 +236,28 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
                          storageManager:(TSStorageManager *)storageManager
                                  finder:(OWSMessageContentJobFinder *)finder NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
+- (void)setup;
+- (void)close;
 
 @end
 
 #pragma mark -
 
 @implementation OWSMessageContentQueue
+- (void)setup{
+    if(!_dbReadWriteConnection){
+        _dbReadWriteConnection = [[TSStorageManager sharedManager] newDatabaseConnection];
+    }
+}
 
+- (void)close{
+    _dbReadWriteConnection = nil;
+}
 - (instancetype)initWithMessagesManager:(OWSMessageManager *)messagesManager
                          storageManager:(TSStorageManager *)storageManager
                                  finder:(OWSMessageContentJobFinder *)finder
 {
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     self = [super init];
     if (!self) {
@@ -382,11 +392,36 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
 @property (nonatomic, readonly) OWSMessageContentQueue *processingQueue;
 @property (nonatomic, readonly) YapDatabaseConnection *dbConnection;
 
+@property (nonatomic) BOOL isInit;
 @end
 
 #pragma mark -
 
 @implementation OWSBatchMessageProcessor
+
+- (void)setup{
+    if(!_isInit && _processingQueue == nil){
+        _isInit = YES;
+
+        YapDatabaseConnection *dbConnection = [[TSStorageManager sharedManager].database newConnection];
+        OWSMessageManager *messagesManager = [OWSMessageManager sharedManager];
+        [messagesManager setup];
+        TSStorageManager *storageManager = [TSStorageManager sharedManager];
+        
+        OWSMessageContentJobFinder *finder = [[OWSMessageContentJobFinder alloc] initWithDBConnection:dbConnection];
+        OWSMessageContentQueue *processingQueue = [[OWSMessageContentQueue alloc] initWithMessagesManager:messagesManager
+                                                                                           storageManager:storageManager
+                                                                                                   finder:finder];
+        
+        _processingQueue = processingQueue;
+    }
+}
+
+- (void)close{
+    [_processingQueue.messagesManager close];
+    _processingQueue = nil;
+    _isInit = NO;
+}
 
 - (instancetype)initWithDBConnection:(YapDatabaseConnection *)dbConnection
                      messagesManager:(OWSMessageManager *)messagesManager
@@ -406,6 +441,7 @@ NSString *const OWSMessageContentJobFinderExtensionGroup = @"OWSMessageContentJo
 
     _processingQueue = processingQueue;
 
+    _isInit = YES;
     return self;
 }
 

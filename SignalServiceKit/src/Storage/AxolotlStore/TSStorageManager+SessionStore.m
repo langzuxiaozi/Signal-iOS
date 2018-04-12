@@ -39,9 +39,25 @@ void AssertIsOnSessionStoreQueue()
     return sessionDBConnection;
 }
 
+static YapDatabaseConnection *sessionDBConnection;
+- (void)clearSessionDBConnection{
+    sessionDBConnection = nil;
+}
+
 - (YapDatabaseConnection *)sessionDBConnection
 {
-    return [[self class] sessionDBConnection];
+    if (sessionDBConnection == nil) {
+         @synchronized(self){
+            if (sessionDBConnection == nil) {
+                sessionDBConnection = [TSStorageManager sharedManager].newKeysDatabaseConnection;
+                sessionDBConnection.objectCacheEnabled = NO;
+#if DEBUG
+                sessionDBConnection.permittedTransactions = YDB_AnySyncTransaction;
+#endif
+            }
+        }
+    }
+    return sessionDBConnection;
 }
 
 #pragma mark - SessionStore

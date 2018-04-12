@@ -91,7 +91,7 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 
 - (instancetype)initWithDBConnection:(YapDatabaseConnection *)dbConnection
 {
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     self = [super init];
     if (!self) {
@@ -227,7 +227,7 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
                    batchMessageProcessor:(OWSBatchMessageProcessor *)batchMessageProcessor
                                   finder:(OWSMessageDecryptJobFinder *)finder
 {
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     self = [super init];
     if (!self) {
@@ -320,19 +320,21 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
     OWSAssert(job);
 
     OWSSignalServiceProtosEnvelope *envelope = job.envelopeProto;
+    __weak typeof(self) weakSelf = self;
     [self.messageDecrypter decryptEnvelope:envelope
                               successBlock:^(NSData *_Nullable plaintextData) {
-
+                                __strong typeof(self) strongSelf = weakSelf;
                                   // We can't decrypt the same message twice, so we need to persist
                                   // the decrypted envelope data ASAP to prevent data loss.
-                                  [self.batchMessageProcessor enqueueEnvelopeData:job.envelopeData plaintextData:plaintextData];
+                                  [strongSelf.batchMessageProcessor enqueueEnvelopeData:job.envelopeData plaintextData:plaintextData];
 
-                                  dispatch_async(self.serialQueue, ^{
+                                  dispatch_async(strongSelf.serialQueue, ^{
                                       completion(YES);
                                   });
                               }
                               failureBlock:^{
-                                  dispatch_async(self.serialQueue, ^{
+                                  __strong typeof(self) strongSelf = weakSelf;
+                                  dispatch_async(strongSelf.serialQueue, ^{
                                       completion(NO);
                                   });
                               }];
@@ -359,6 +361,7 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
 @property (nonatomic, readonly) OWSMessageDecryptQueue *processingQueue;
 @property (nonatomic, readonly) YapDatabaseConnection *dbConnection;
 
+@property (nonatomic) BOOL isInit;
 @end
 
 #pragma mark -
@@ -369,7 +372,7 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
                     messageDecrypter:(OWSMessageDecrypter *)messageDecrypter
                batchMessageProcessor:(OWSBatchMessageProcessor *)batchMessageProcessor
 {
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     self = [super init];
     if (!self) {
@@ -383,7 +386,7 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
                                                       finder:finder];
 
     _processingQueue = processingQueue;
-
+    _isInit = YES;
     return self;
 }
 
@@ -397,6 +400,32 @@ NSString *const OWSMessageDecryptJobFinderExtensionGroup = @"OWSMessageProcessin
     return [self initWithDBConnection:dbConnection
                      messageDecrypter:messageDecrypter
                 batchMessageProcessor:batchMessageProcessor];
+}
+
+- (void)setup{
+    if(!_isInit && _processingQueue == nil){
+        _isInit = YES;
+        YapDatabaseConnection *dbConnection = [[TSStorageManager sharedManager].database newConnection];
+        OWSMessageDecrypter *messageDecrypter = [OWSMessageDecrypter sharedManager];
+        [messageDecrypter setup];
+        OWSBatchMessageProcessor *batchMessageProcessor = [OWSBatchMessageProcessor sharedInstance];
+        [batchMessageProcessor setup];
+        
+        OWSMessageDecryptJobFinder *finder = [[OWSMessageDecryptJobFinder alloc] initWithDBConnection:dbConnection];
+        OWSMessageDecryptQueue *processingQueue =
+        [[OWSMessageDecryptQueue alloc] initWithMessageDecrypter:messageDecrypter
+                                           batchMessageProcessor:batchMessageProcessor
+                                                          finder:finder];
+        
+        _processingQueue = processingQueue;
+    }
+}
+
+- (void)close{
+    [_processingQueue.messageDecrypter close];
+    [_processingQueue.batchMessageProcessor close];
+    _processingQueue = nil;
+    _isInit = NO;
 }
 
 + (instancetype)sharedInstance

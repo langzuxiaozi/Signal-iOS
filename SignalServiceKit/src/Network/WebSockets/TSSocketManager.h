@@ -33,4 +33,5 @@ typedef NS_ENUM(NSUInteger, SocketManagerState) {
 // This method can be called from any thread.
 + (void)requestSocketOpen;
 
+- (void)requestSocketClose;
 @end

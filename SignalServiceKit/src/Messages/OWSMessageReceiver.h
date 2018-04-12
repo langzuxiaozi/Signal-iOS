@@ -18,7 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)handleReceivedEnvelope:(OWSSignalServiceProtosEnvelope *)envelope;
 - (void)handleAnyUnprocessedEnvelopesAsync;
-
+- (void)setup;
+- (void)close;
 @end
 
 NS_ASSUME_NONNULL_END

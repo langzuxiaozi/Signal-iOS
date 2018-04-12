@@ -23,6 +23,8 @@ extern const NSUInteger kIdentityKeyLength;
 @interface OWSIdentityManager : NSObject <IdentityKeyStore>
 
 - (instancetype)init NS_UNAVAILABLE;
+- (void)setup;
+- (void)close;
 
 + (instancetype)sharedManager;
 

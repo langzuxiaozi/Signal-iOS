@@ -1,4 +1,4 @@
-//
+    //
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
@@ -37,8 +37,7 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 @property (nonatomic, nullable) NSString *cachedLocalNumber;
 
 // we use separate db which is not backed up but created for each new / logged in user for all chat service related keys and ids; we do want to register for chat with clean state; we do not store any of those.
-@property (nonatomic, strong) YapDatabaseConnection *keysDBConnection;
-@property (nonatomic, strong) YapDatabaseConnection *dbConnection;
+
 
 @end
 
@@ -104,10 +103,10 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
                                                            userInfo:nil];
 }
 
-- (void)resetForRegistration
-{
+- (void)resetAccount {
     @synchronized(self)
     {
+        [self storeLocalNumber:nil];
         _isRegistered = NO;
         _cachedLocalNumber = nil;
         _phoneNumberAwaitingVerification = nil;
@@ -115,6 +114,11 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
             [transaction removeAllObjectsInCollection:TSAccountManager_UserAccountCollection];
         }];
     }
+}
+
+- (void)resetForRegistration
+{
+    [self resetAccount];
     [[TSStorageManager sharedManager] resetSessionStore];
 }
 
@@ -191,9 +195,14 @@ NSString *const TSAccountManager_ServerSignalingKey = @"TSStorageServerSignaling
 - (void)storeLocalNumber:(NSString *)localNumber
 {
     @synchronized (self) {
-        [self.keysDBConnection setObject:localNumber
-                                  forKey:TSAccountManager_RegisteredNumberKey
-                            inCollection:TSStorageUserAccountCollection];
+        if(localNumber == nil){
+            
+            [self.keysDBConnection removeObjectForKey:TSAccountManager_RegisteredNumberKey inCollection:TSStorageUserAccountCollection];
+        }else{
+            [self.keysDBConnection setObject:localNumber
+                                      forKey:TSAccountManager_RegisteredNumberKey
+                                inCollection:TSStorageUserAccountCollection];
+        }
     }
 }
 

@@ -49,7 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
         return self;
     }
 
-    _databaseConnection = storageManager.newDatabaseConnection;
+//    _databaseConnection = storageManager.newDatabaseConnection;
     _disappearingMessagesFinder = [OWSDisappearingMessagesFinder new];
 
     OWSSingletonAssert();
@@ -64,6 +64,23 @@ NS_ASSUME_NONNULL_BEGIN
                                                object:nil];
 
     return self;
+}
+
+static YapDatabaseConnection *_databaseConnection;
++ (void)clearDbConnection{
+    _databaseConnection = nil;
+}
+
+- (YapDatabaseConnection *)databaseConnection
+{
+    if (_databaseConnection == nil) {
+        @synchronized(self){
+            if (_databaseConnection == nil) {
+                _databaseConnection = [TSStorageManager sharedManager].newDatabaseConnection;
+            }
+        }
+    }
+    return _databaseConnection;
 }
 
 - (void)dealloc

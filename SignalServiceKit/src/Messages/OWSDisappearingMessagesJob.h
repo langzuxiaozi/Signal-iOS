@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface OWSDisappearingMessagesJob : NSObject
 
 + (instancetype)sharedJob;
++ (void)clearDbConnection;
 
 - (instancetype)init NS_UNAVAILABLE;
 

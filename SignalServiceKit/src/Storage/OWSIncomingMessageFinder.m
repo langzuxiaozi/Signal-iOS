@@ -35,7 +35,10 @@ NSString *const OWSIncomingMessageFinderColumnSourceDeviceId = @"OWSIncomingMess
 
     return [self initWithDatabase:[TSStorageManager sharedManager].database];
 }
-
+- (void)dealloc{
+    _dbConnection = nil;
+    _database = nil;
+}
 - (instancetype)initWithDatabase:(YapDatabase *)database
 {
     self = [super init];

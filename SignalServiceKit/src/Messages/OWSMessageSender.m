@@ -357,7 +357,6 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
 @property (nonatomic, readonly) TSStorageManager *storageManager;
 @property (nonatomic, readonly) OWSBlockingManager *blockingManager;
 @property (nonatomic, readonly) OWSUploadingService *uploadingService;
-@property (nonatomic, readonly) YapDatabaseConnection *dbConnection;
 @property (nonatomic, readonly) id<ContactsManagerProtocol> contactsManager;
 @property (nonatomic, readonly) ContactsUpdater *contactsUpdater;
 @property (atomic, readonly) NSMutableDictionary<NSString *, NSOperationQueue *> *sendingQueueMap;
@@ -385,7 +384,7 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
     _uploadingService = [[OWSUploadingService alloc] initWithNetworkManager:networkManager];
     _dbConnection = storageManager.newDatabaseConnection;
 
-    OWSSingletonAssert();
+//    OWSSingletonAssert();
 
     return self;
 }
@@ -1373,6 +1372,10 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
             completionHandler();
         });
     });
+}
+
+- (void)dealloc{
+    _dbConnection = nil;
 }
 
 #pragma mark - Logging

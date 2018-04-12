@@ -100,6 +100,16 @@ NSString *const kNSNotificationName_IdentityStateDidChange = @"kNSNotificationNa
     return self;
 }
 
+- (void)setup{
+    if(!_dbConnection && _storageManager){
+        _dbConnection = _storageManager.newKeysDatabaseConnection;
+    }
+    
+}
+- (void)close{
+    _dbConnection = nil;
+}
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];

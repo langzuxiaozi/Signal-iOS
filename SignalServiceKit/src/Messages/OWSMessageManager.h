@@ -11,6 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class YapDatabaseReadWriteTransaction;
 
 @interface OWSMessageManager : OWSMessageHandler
+- (void)setup;
+- (void)close;
 
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)sharedManager;

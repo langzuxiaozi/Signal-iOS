@@ -76,6 +76,16 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
     return self;
 }
 
+- (void)setup{
+    if(!_dbConnection){
+        _dbConnection = [TSStorageManager sharedManager].newDatabaseConnection;
+    }
+    
+}
+- (void)close{
+    _dbConnection = nil;
+}
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];

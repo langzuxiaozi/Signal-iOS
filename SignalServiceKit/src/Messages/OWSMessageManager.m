@@ -58,6 +58,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation OWSMessageManager
 
+
+- (void)setup{
+    if(!_dbConnection && _storageManager){
+        _dbConnection = _storageManager.newDatabaseConnection;
+    }
+    if(!_incomingMessageFinder && _storageManager){
+        _incomingMessageFinder = [[OWSIncomingMessageFinder alloc] initWithDatabase:_storageManager.database];
+    }
+}
+- (void)close{
+    _dbConnection = nil;
+    _incomingMessageFinder = nil;
+}
+
 + (instancetype)sharedManager
 {
     static OWSMessageManager *sharedMyManager = nil;

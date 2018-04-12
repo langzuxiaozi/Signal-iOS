@@ -98,15 +98,33 @@
     return self.dbReadWriteConnection;
 }
 
+//+ (YapDatabaseConnection *)dbReadWriteConnection
+//{
+//    // Use a dedicated connection for model reads & writes.
+//    static YapDatabaseConnection *dbReadWriteConnection = nil;
+//    static dispatch_once_t onceToken;
+//    dispatch_once(&onceToken, ^{
+//        dbReadWriteConnection = [self storageManager].newDatabaseConnection;
+//    });
+//    return dbReadWriteConnection;
+//}
+
+// Use a dedicated connection for model reads & writes.
+static YapDatabaseConnection *dbReadWriteConnection = nil;
 + (YapDatabaseConnection *)dbReadWriteConnection
 {
-    // Use a dedicated connection for model reads & writes.
-    static YapDatabaseConnection *dbReadWriteConnection = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        dbReadWriteConnection = [self storageManager].newDatabaseConnection;
-    });
+    if (dbReadWriteConnection == nil) {
+        @synchronized(self) {
+            if (dbReadWriteConnection == nil) {
+                dbReadWriteConnection = [self storageManager].newDatabaseConnection;
+            }
+        }
+    }
     return dbReadWriteConnection;
+}
+
++ (void)clearDatabaseConnection{
+    dbReadWriteConnection = nil;
 }
 
 + (TSStorageManager *)storageManager

@@ -43,7 +43,7 @@ static TextSecureKitEnv *TextSecureKitEnvSharedInstance;
 + (void)setSharedEnv:(TextSecureKitEnv *)env
 {
     @synchronized (self) {
-        NSAssert(TextSecureKitEnvSharedInstance == nil, @"Trying to set shared TextSecureKitEnv which has already been set");
+//        NSAssert(TextSecureKitEnvSharedInstance == nil, @"Trying to set shared TextSecureKitEnv which has already been set");
         TextSecureKitEnvSharedInstance = env;
     }
 }

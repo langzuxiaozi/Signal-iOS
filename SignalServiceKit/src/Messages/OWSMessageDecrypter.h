@@ -15,7 +15,8 @@ typedef void (^DecryptFailureBlock)();
 
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)sharedManager;
-
+- (void)setup;
+- (void)close;
 // decryptEnvelope: can be called from any thread.
 // successBlock & failureBlock will be called an arbitrary thread.
 //

@@ -11,7 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 // messages to a durable queue and then process them in batches,
 // in the order in which they were received.
 @interface OWSBatchMessageProcessor : NSObject
+- (void)setup;
 
+- (void)close;
 + (instancetype)sharedInstance;
 + (void)syncRegisterDatabaseExtension:(YapDatabase *)database;
 

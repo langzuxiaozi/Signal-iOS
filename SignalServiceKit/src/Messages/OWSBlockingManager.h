@@ -11,6 +11,9 @@ extern NSString *const kNSNotificationName_BlockedPhoneNumbersDidChange;
 
 - (instancetype)init NS_UNAVAILABLE;
 
+- (void)setup;
+- (void)close;
+
 + (instancetype)sharedManager;
 
 - (void)addBlockedPhoneNumber:(NSString *)phoneNumber;

@@ -20,6 +20,9 @@ extern NSString *const TSSecondaryDevicesDatabaseViewExtensionName;
 
 @interface TSDatabaseView : NSObject
 
+@property (nonatomic) BOOL areAllAsyncRegistrationsComplete;
++ (instancetype)sharedInstance;
+
 - (instancetype)init NS_UNAVAILABLE;
 
 // This method can be called from any thread.

@@ -46,7 +46,19 @@ NS_ASSUME_NONNULL_BEGIN
     });
     return sharedMyManager;
 }
-
+- (void)setup{
+    if(!_dbConnection && _storageManager){
+        _dbConnection = _storageManager.newDatabaseConnection;
+    }
+    
+    [_identityManager setup];
+    [_blockingManager setup];
+}
+- (void)close{
+    _dbConnection = nil;
+    [_identityManager close];
+    [_blockingManager close];
+}
 - (instancetype)initDefault
 {
     TSStorageManager *storageManager = [TSStorageManager sharedManager];

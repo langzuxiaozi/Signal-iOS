@@ -166,7 +166,6 @@ NSString *const OWSReadReceiptManagerAreReadReceiptsEnabled = @"areReadReceiptsE
     }
 
     _messageSender = messageSender;
-    _dbConnection = storageManager.newDatabaseConnection;
 
     _toLinkedDevicesReadReceiptMap = [NSMutableDictionary new];
     _toSenderReadReceiptMap = [NSMutableDictionary new];
@@ -182,6 +181,23 @@ NSString *const OWSReadReceiptManagerAreReadReceiptsEnabled = @"areReadReceiptsE
     [self scheduleProcessing];
 
     return self;
+}
+
+static YapDatabaseConnection *_dbConnection;
+- (void)clearDbConnection{
+    _dbConnection = nil;
+}
+
+- (YapDatabaseConnection *)dbConnection
+{
+    if (_dbConnection == nil) {
+        @synchronized(self){
+            if (_dbConnection == nil) {
+                _dbConnection = [TSStorageManager sharedManager].newDatabaseConnection;
+            }
+        }
+    }
+    return _dbConnection;
 }
 
 - (void)dealloc

@@ -10,6 +10,7 @@
 - (void)archiveAllSessionsForContact:(NSString *)contactIdentifier;
 
 #pragma mark - debug
+- (void)clearSessionDBConnection;
 
 - (void)resetSessionStore;
 - (void)printAllSessions;

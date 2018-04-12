@@ -35,8 +35,6 @@ NSString *const TSSecondaryDevicesDatabaseViewExtensionName = @"TSSecondaryDevic
 
 @interface TSDatabaseView ()
 
-@property (nonatomic) BOOL areAllAsyncRegistrationsComplete;
-
 @end
 
 #pragma mark -

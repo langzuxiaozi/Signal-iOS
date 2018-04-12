@@ -31,6 +31,8 @@ extern NSString *const kIncomingMessageMarkedAsReadNotification;
 // This manager is responsible for handling and emitting all four kinds.
 @interface OWSReadReceiptManager : NSObject
 
+- (void)clearDbConnection;
+
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)sharedManager;
 

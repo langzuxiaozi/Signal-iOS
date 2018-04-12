@@ -13,6 +13,7 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 
 @class TSNetworkManager;
 @class TSStorageManager;
+@class YapDatabaseConnection;
 
 @interface TSAccountManager : NSObject
 
@@ -26,7 +27,11 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 + (instancetype)sharedInstance;
 
 @property (nonatomic, strong, readonly) TSNetworkManager *networkManager;
+@property (nonatomic, strong) YapDatabaseConnection *keysDBConnection;
+@property (nonatomic, strong) YapDatabaseConnection *dbConnection;
 
+- (void)storeLocalNumber:(NSString *)localNumber;
+- (void)resetAccount;
 /**
  *  Returns if a user is registered or not
  *
