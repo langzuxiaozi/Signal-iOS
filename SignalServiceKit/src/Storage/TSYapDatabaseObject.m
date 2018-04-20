@@ -200,4 +200,10 @@ static YapDatabaseConnection *dbReadWriteConnection = nil;
     return object;
 }
 
++ (void)removeObjectWithUniqueID:(NSString *)uniqueID{
+    [[self dbReadWriteConnection] readWriteWithBlock:^(YapDatabaseReadWriteTransaction * _Nonnull transaction) {
+        [transaction removeObjectForKey:uniqueID inCollection:[self collection]];
+    }];
+}
+
 @end

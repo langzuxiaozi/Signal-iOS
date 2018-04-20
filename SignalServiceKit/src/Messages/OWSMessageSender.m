@@ -1363,8 +1363,9 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
         if (!([devices count] > 0)) {
             return;
         }
-
+        
         dispatch_async([OWSDispatch sessionStoreQueue], ^{
+            [OWSRecipientIdentity removeObjectWithUniqueID:identifier];
             for (NSUInteger i = 0; i < [devices count]; i++) {
                 int deviceNumber = [devices[i] intValue];
                 [[TSStorageManager sharedManager] deleteSessionForContact:identifier deviceId:deviceNumber];

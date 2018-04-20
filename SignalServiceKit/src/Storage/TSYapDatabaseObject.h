@@ -82,6 +82,8 @@
 + (instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID transaction:(YapDatabaseReadTransaction *)transaction NS_SWIFT_NAME(fetch(uniqueId:transaction:));
 + (instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID NS_SWIFT_NAME(fetch(uniqueId:));
 
++ (void)removeObjectWithUniqueID:(NSString *)uniqueID;
+
 /**
  *  Saves the object with a new YapDatabaseConnection
  */
