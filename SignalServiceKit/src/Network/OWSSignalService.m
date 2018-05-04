@@ -184,6 +184,10 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     sessionManager.securityPolicy = [OWSHTTPSecurityPolicy sharedPolicy];
     sessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
     sessionManager.responseSerializer = [AFJSONResponseSerializer serializer];
+    // 设置超时时间
+    [sessionManager.requestSerializer willChangeValueForKey:@"timeoutInterval"];
+    sessionManager.requestSerializer.timeoutInterval = 20.f;
+    [sessionManager.requestSerializer didChangeValueForKey:@"timeoutInterval"];
 
     return sessionManager;
 }
@@ -217,6 +221,10 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     [sessionManager.requestSerializer setValue:self.censorshipConfiguration.signalServiceReflectorHost forHTTPHeaderField:@"Host"];
 
     sessionManager.responseSerializer = [AFJSONResponseSerializer serializer];
+    // 设置超时时间
+    [sessionManager.requestSerializer willChangeValueForKey:@"timeoutInterval"];
+    sessionManager.requestSerializer.timeoutInterval = 20.f;
+    [sessionManager.requestSerializer didChangeValueForKey:@"timeoutInterval"];
 
     return sessionManager;
 }
@@ -246,6 +254,10 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
     // Default acceptable content headers are rejected by AWS
     sessionManager.responseSerializer.acceptableContentTypes = nil;
+    // 设置超时时间
+    [sessionManager.requestSerializer willChangeValueForKey:@"timeoutInterval"];
+    sessionManager.requestSerializer.timeoutInterval = 20.f;
+    [sessionManager.requestSerializer didChangeValueForKey:@"timeoutInterval"];
 
     return sessionManager;
 }
@@ -262,7 +274,11 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     [sessionManager.requestSerializer setValue:self.censorshipConfiguration.CDNReflectorHost forHTTPHeaderField:@"Host"];
 
     sessionManager.responseSerializer = [AFJSONResponseSerializer serializer];
-
+    // 设置超时时间
+    [sessionManager.requestSerializer willChangeValueForKey:@"timeoutInterval"];
+    sessionManager.requestSerializer.timeoutInterval = 20.f;
+    [sessionManager.requestSerializer didChangeValueForKey:@"timeoutInterval"];
+    
     return sessionManager;
 }
 
