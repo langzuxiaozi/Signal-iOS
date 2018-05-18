@@ -362,7 +362,7 @@ NS_ASSUME_NONNULL_BEGIN
                         [self handleReceivedTextMessageWithEnvelope:cachedEnvelope dataMessage:cachedDataMessage transaction:transaction];
                         
                         if ([self isDataMessageGroupAvatarUpdate:cachedDataMessage]) {
-                            DDLogVerbose(@"%@ Data message had group avatar attachment", self.logTag);
+                            DDLogVerbose(@"%@ Data message had group avatar attachment", self.tag);
                             [self handleReceivedGroupAvatarUpdateWithEnvelope:cachedEnvelope dataMessage:cachedDataMessage transaction:transaction];
                         }
                     }
