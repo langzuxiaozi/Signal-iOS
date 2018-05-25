@@ -7,7 +7,7 @@
 static void *SocketManagerStateObservationContext = &SocketManagerStateObservationContext;
 
 extern NSString *const kNSNotification_SocketManagerStateDidChange;
-
+extern NSString *const kNSNotification_SocketManagerError;
 typedef NS_ENUM(NSUInteger, SocketManagerState) {
     SocketManagerStateClosed,
     SocketManagerStateConnecting,

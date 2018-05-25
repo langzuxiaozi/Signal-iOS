@@ -28,6 +28,7 @@ static const CGFloat kBackgroundOpenSocketDurationSeconds = 25.f;
 static const CGFloat kBackgroundKeepSocketAliveDurationSeconds = 15.f;
 
 NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_SocketManagerStateDidChange";
+NSString *const kNSNotification_SocketManagerError = @"kNSNotification_SocketManagerError";
 
 // TSSocketManager's properties should only be accessed from the main thread.
 @interface TSSocketManager ()
@@ -355,7 +356,9 @@ NSString *const kNSNotification_SocketManagerStateDidChange = @"kNSNotification_
         // Ignore events from obsolete web sockets.
         return;
     }
-
+    [[NSNotificationCenter defaultCenter] postNotificationNameAsync:kNSNotification_SocketManagerError
+                                                             object:nil
+                                                           userInfo:error.userInfo];
     DDLogError(@"Websocket did fail with error: %@", error);
 
     [self handleSocketFailure];
