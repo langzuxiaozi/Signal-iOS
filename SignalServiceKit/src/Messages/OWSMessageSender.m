@@ -960,11 +960,21 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
             return failureHandler(error);
         }
     }
+    
+    BOOL needsPush = YES;
+    if (message.groupMetaMessage == TSGroupMetaMessageNew
+        || message.groupMetaMessage == TSGroupMetaMessageQuit
+        || message.groupMetaMessage == TSGroupMetaMessageUpdate
+        || message.groupMetaMessage == TSGroupMetaMessageRequestInfo) {
+        needsPush = NO;
+    }
 
     TSSubmitMessageRequest *request = [[TSSubmitMessageRequest alloc] initWithRecipient:recipient.uniqueId
                                                                                messages:deviceMessages
                                                                                   relay:recipient.relay
                                                                               timeStamp:message.timestamp];
+    
+    request.needsPush = needsPush;
 
     [self.networkManager makeRequest:request
                              success:^(NSURLSessionDataTask *task, id responseObject) {

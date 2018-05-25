@@ -61,6 +61,11 @@ typedef void (^failureBlock)(NSURLSessionDataTask *task, NSError *error);
         [TSNetworkManager errorPrettifyingForFailureBlock:failureBlock];
 
     AFHTTPSessionManager *sessionManager = [OWSSignalService sharedInstance].signalServiceSessionManager;
+    
+    if ([request isKindOfClass:[TSSubmitMessageRequest class]]) {
+        TSSubmitMessageRequest* msgRequest = (TSSubmitMessageRequest *)request;
+        [sessionManager.requestSerializer setValue:msgRequest.needsPush?@"1":@"0" forHTTPHeaderField:@"Dapp-PushType"];
+    }
 
     if ([request isKindOfClass:[TSVerifyCodeRequest class]]) {
         // We plant the Authorization parameter ourselves, no need to double add.

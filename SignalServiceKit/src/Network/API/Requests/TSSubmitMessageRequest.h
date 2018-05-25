@@ -10,6 +10,7 @@
 #import "TSRequest.h"
 
 @interface TSSubmitMessageRequest : TSRequest
+@property (nonatomic, assign)BOOL needsPush;
 
 - (TSRequest *)initWithRecipient:(NSString *)contactRegisteredID
                         messages:(NSArray *)messages
