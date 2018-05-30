@@ -272,8 +272,14 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSDate *)lastMessageDate {
-    if (_lastMessageDate) {
-        return _lastMessageDate;
+//    if (_lastMessageDate) {
+//        return _lastMessageDate;
+//    } else {
+//        return _creationDate;
+//    }
+    
+    if (self.lastInteraction) {
+        return self.lastInteraction.dateForSorting;
     } else {
         return _creationDate;
     }

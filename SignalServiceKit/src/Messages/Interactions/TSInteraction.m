@@ -122,7 +122,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSDate *)dateForSorting
 {
-    return [NSDate ows_dateWithMillisecondsSince1970:self.timestampForSorting];
+    return [NSDate ows_dateWithMillisecondsSince1970:self.timestamp];
 }
 
 - (uint64_t)timestampForSorting
