@@ -40,7 +40,7 @@ An Objective-C library for communicating with the Signal messaging service.
   s.dependency 'YapDatabase/SQLCipher', '~> 3.0.2'
   s.dependency 'SocketRocket'
   s.dependency 'libPhoneNumber-iOS'
-  s.dependency 'OpenSSL'
+  s.dependency 'GRKOpenSSLFramework'
   s.dependency 'SAMKeychain'
   s.dependency 'TwistedOakCollapsingFutures'
   s.dependency 'Reachability'
