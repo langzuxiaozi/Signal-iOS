@@ -1351,6 +1351,11 @@ NSString *const OWSMessageSenderRateLimitedException = @"RateLimitedException";
                                          inThread:thread
                                       messageType:TSInfoMessageTypeGroupQuit
                                     customMessage:@""] save];
+    } else if (message.groupMetaMessage == TSGroupMetaMessageRequestInfo) {
+        [[[TSInfoMessage alloc] initWithTimestamp:message.timestamp
+                                         inThread:thread
+                                      messageType:TSInfoMessageTypeGroupUpdate
+                                    customMessage:@"REQUEST_INFO_TSGroupMetaMessageRequestInfo"] save];
     } else {
         [[[TSInfoMessage alloc] initWithTimestamp:message.timestamp
                                          authorId:[[TSAccountManager sharedInstance] localNumber]
