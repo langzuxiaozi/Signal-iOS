@@ -8,17 +8,17 @@
 
 Pod::Spec.new do |s|
   s.name             = "SignalServiceKit"
-  s.version          = "0.9.0"
+  s.version          = "100.9.0"
   s.summary          = "An Objective-C library for communicating with the Signal messaging service."
 
   s.description      = <<-DESC
 An Objective-C library for communicating with the Signal messaging service.
   DESC
 
-  s.homepage         = "https://github.com/toshiapp/Signal-iOS"
+  s.homepage         = "https://github.com/langzuxiaozi/Signal-iOS"
   s.license          = 'GPLv3'
   s.author           = { "Frederic Jacobs" => "github@fredericjacobs.com" }
-  s.source           = { :git => "https://github.com/toshiapp/Signal-iOS.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/langzuxiaozi/Signal-iOS.git", :tag => s.version.to_s }
   s.social_media_url = 'https://twitter.com/FredericJacobs'
 
   s.platform     = :ios, '8.0'
